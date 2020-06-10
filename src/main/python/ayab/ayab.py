@@ -18,11 +18,12 @@
 #    https://github.com/AllYarnsAreBeautiful/ayab-desktop
 
 """Provides an Interface for users to operate AYAB using a GUI."""
-from fbs_runtime.application_context import ApplicationContext
+from fbs_runtime.application_context.PyQt5 import ApplicationContext
 
 import sys
 import os
 import logging
+from math import ceil
 
 from PyQt5 import QtWidgets, QtGui, QtCore
 from PyQt5.QtWidgets import QMainWindow
@@ -35,6 +36,9 @@ from ayab.ayab_gui import Ui_MainWindow
 from ayab.plugins.ayab_plugin import AyabPluginControl
 from ayab.plugins.ayab_plugin.firmware_flash import FirmwareFlash
 from ayab.ayab_about import Ui_AboutForm
+from ayab.ayab_preferences import Preferences
+
+from DAKimport import DAKimport
 
 # Temporal serial imports.
 import serial
@@ -42,6 +46,7 @@ import serial.tools.list_ports
 
 # from playsound import playsound
 
+MACHINE_WIDTH = 200
 
 logging.basicConfig(filename='ayab_log.txt',
                     level=logging.DEBUG,
@@ -86,12 +91,14 @@ class GuiMain(QMainWindow):
 
         self.app_context = app_context
 
-        self.image_file_route = None        
+        self.image_file_route = None
+    
+        self.prefs = Preferences()
 
         self.pil_image = None
         self.start_needle = 80
         self.stop_needle = 119
-        self.imageAlignment = "center"
+        self.imageAlignment = self.prefs.settings.value("default_alignment")
         self.var_progress = 0
         self.zoomlevel = 3
 
@@ -99,6 +106,16 @@ class GuiMain(QMainWindow):
         self.ui.setupUi(self)
         self.enabled_plugin = AyabPluginControl()
         self.enabled_plugin.setup_ui(self)
+
+        knitting_mode_box = self.enabled_plugin.options_ui.knitting_mode_box
+        knitting_mode_box.setCurrentIndex(knitting_mode_box.findText(self.prefs.settings.value("default_knitting_mode")))
+        if self.prefs.settings.value("default_infinite_repeat"):
+            self.enabled_plugin.options_ui.infRepeat_checkbox.setCheckState(QtCore.Qt.Checked)
+        else:
+            self.enabled_plugin.options_ui.infRepeat_checkbox.setCheckState(QtCore.Qt.Unchecked)
+        alignment_combo_box = self.enabled_plugin.options_ui.alignment_combo_box
+        alignment_combo_box.setCurrentIndex(alignment_combo_box.findText(self.imageAlignment))
+        
         self.showMaximized()
         self.setupBehaviour()
 
@@ -229,18 +246,34 @@ class GuiMain(QMainWindow):
 
         self.ui.actionQuit.triggered.connect(QtCore.QCoreApplication.instance().quit)
         self.ui.actionAbout.triggered.connect(self.open_about_ui)
-        self.ui.actionMirror.triggered.connect(self.mirror_image)
         self.ui.actionInvert.triggered.connect(self.invert_image)
+        self.ui.actionStretch.triggered.connect(self.stretch_image)
         self.ui.actionRepeat.triggered.connect(self.repeat_image)
+        self.ui.actionReflect.triggered.connect(self.reflect_image)
+        self.ui.actionHorizontal_Flip.triggered.connect(self.hflip_image)
+        self.ui.actionVertical_Flip.triggered.connect(self.vflip_image)
         self.ui.actionRotate_Left.triggered.connect(self.rotate_left)
         self.ui.actionRotate_Right.triggered.connect(self.rotate_right)
-        self.ui.actionVertical_Flip.triggered.connect(self.flip_image)
+        self.ui.actionSetPreferences.triggered.connect(self.set_preferences)
 
     def load_image_from_string(self, image_str):
         '''Loads an image into self.ui.image_pattern_view using a temporary QGraphicsScene'''
 
         # TODO Check for maximum width before loading the image
-        self.pil_image = Image.open(image_str)
+
+        # check for DAK files
+        image_str_suffix = image_str[-4:].lower()
+        if (image_str_suffix == ".pat" or image_str_suffix == ".stp"):
+            # convert DAK file
+            dakfile_processor = DAKimport.Importer()
+            if (image_str_suffix == ".pat"):
+                self.pil_image = dakfile_processor.pat2im(image_str)
+            elif (image_str_suffix == ".stp"):
+                self.pil_image = dakfile_processor.stp2im(image_str)
+            else:
+                logging.error("unrecognized file suffix")
+        else:
+            self.pil_image = Image.open(image_str)
 
         self.pil_image = self.pil_image.convert("RGBA")
 
@@ -270,7 +303,7 @@ class GuiMain(QMainWindow):
         qscene = QtWidgets.QGraphicsScene()
 
         # TODO move to generic configuration
-        machine_width = 200
+        machine_width = MACHINE_WIDTH
         bar_height = 5.0
 
         # add pattern and move accordingly to alignment
@@ -365,7 +398,8 @@ class GuiMain(QMainWindow):
             filePath = self.app_context.get_resource("patterns")
         else:
             filePath = ''
-        file_selected_route, _ = QtWidgets.QFileDialog.getOpenFileName(self, "Open file", filePath, 'Images (*.png *.PNG *.jpg *.JPG *.jpeg *.JPEG *.bmp *.BMP *.gif *.GIF *.tiff *.TIFF *.tif *.TIF)')
+        file_selected_route, _ = QtWidgets.QFileDialog.getOpenFileName(
+            self, "Open file", filePath, 'Images (*.png *.PNG *.jpg *.JPG *.jpeg *.JPEG *.bmp *.BMP *.gif *.GIF *.tiff *.TIFF *.tif *.TIF *.Pat *.pat *.PAT *.Stp *.stp *.STP)')
         if file_selected_route:
             self.update_file_selected_text_field(file_selected_route)
             self.load_image_from_string(str(file_selected_route))
@@ -404,17 +438,43 @@ class GuiMain(QMainWindow):
             "Repeat",
             "Horizontal",
             value=1,
-            min=1
+            min=1,
+            max=ceil(MACHINE_WIDTH / self.pil_image.size[0])
         )
         self.apply_image_transform("repeat", v[0], h[0])
 
-    def mirror_image(self):
-        '''Public mirror current Image function.'''
-        self.apply_image_transform("mirror")
+    def stretch_image(self):
+        '''Public stretch current Image function.'''
+        v = QtWidgets.QInputDialog.getInt(
+            self,
+            "Stretch",
+            "Vertical",
+            value=1,
+            min=1
+        )
+        h = QtWidgets.QInputDialog.getInt(
+            self,
+            "Stretch",
+            "Horizontal",
+            value=1,
+            min=1,
+            max=ceil(MACHINE_WIDTH / self.pil_image.size[0])
+        )
+        self.apply_image_transform("stretch", v[0], h[0])
 
-    def flip_image(self):
-        '''Public mirror current Image function.'''
-        self.apply_image_transform("flip")
+    def reflect_image(self):
+        '''Public reflect current Image function.'''
+        m = Mirrors()
+        if (m.result == QtWidgets.QDialog.Accepted):
+            self.apply_image_transform("reflect", m.mirrors)
+
+    def hflip_image(self):
+        '''Public horizontal flip current Image function.'''
+        self.apply_image_transform("hflip")
+
+    def vflip_image(self):
+        '''Public vertical flip current Image function.'''
+        self.apply_image_transform("vflip")
 
     def rotate_left(self):
         '''Public rotate left current Image function.'''
@@ -432,9 +492,11 @@ class GuiMain(QMainWindow):
         '''
         transform_dict = {
             'invert': self.__invert_image,
+            'stretch': self.__stretch_image,
             'repeat': self.__repeat_image,
-            'mirror': self.__mirror_image,
-            'flip': self.__flip_image,
+            'reflect': self.__reflect_image,
+            'hflip': self.__hflip_image,
+            'vflip': self.__vflip_image,
             'rotate': self.__rotate_image,
         }
         transform = transform_dict.get(transform_type)
@@ -461,6 +523,7 @@ class GuiMain(QMainWindow):
         self.refresh_scene()
 
     def __rotate_image(self, image, args):
+        # TODO crop width if it exceeds the maximum after transform
         if not args:
             logging.debug("image not altered on __rotate_image.")
             return image
@@ -480,17 +543,18 @@ class GuiMain(QMainWindow):
 
         return inverted_image
 
-    def __mirror_image(self, image, args):
+    def __hflip_image(self, image, args):
         import PIL.ImageOps
         mirrored_image = PIL.ImageOps.mirror(image)
         return mirrored_image
 
-    def __flip_image(self, image, args):
+    def __vflip_image(self, image, args):
         import PIL.ImageOps
         flipped_image = PIL.ImageOps.flip(image)
         return flipped_image
 
     def __repeat_image(self, image, args):
+        # TODO crop width if it exceeds the maximum after transform
         """
         Repeat image.
         Repeat pHorizontal times horizontally, pVertical times vertically
@@ -505,6 +569,52 @@ class GuiMain(QMainWindow):
           for w in range(0,new_w,old_w):
             new_im.paste(image, (w,h))
         return new_im
+
+    def __reflect_image(self, image, args):
+        # TODO crop width if it exceeds the maximum after transform
+        """
+        Reflect image.
+        Mirrors Left, Right, Top, Bottom
+        Tom Price 2020-06-01
+        """
+        mirrors = args[0]
+        w = image.size[0]
+        h = image.size[1]
+        w0 = mirrors[0]
+        h0 = mirrors[2]
+        w1 = 1 + mirrors[0] + mirrors[1]
+        h1 = 1 + mirrors[2] + mirrors[3]
+        if w1 == 1:
+            row_im = image
+        else:
+            flip_im = self.__hflip_image(image, tuple())
+            row_im = self.__repeat_image(flip_im, (1,w1))
+            for i in range(w0, w1, 2):
+                row_im.paste(image, (i*w,0))
+        if h1 == 1:
+            return row_im
+        flip_im = self.__vflip_image(row_im, tuple())
+        new_im = self.__repeat_image(flip_im, (h1,1))
+        for i in range(h0, h1, 2):
+            new_im.paste(row_im, (0,i*h))
+        return new_im
+
+    def __stretch_image(self, image, args):
+        # TODO crop width if it exceeds the maximum after transform
+        """
+        Stretch image.
+        Stretch pHorizontal times horizontally, pVertical times vertically
+        Tom Price 2020-05-30
+        """
+        old_h = image.size[1]
+        old_w = image.size[0]
+        new_h = old_h*args[0] # pVertical
+        new_w = old_w*args[1] # pHorizontal
+        new_im = image.resize((new_w,new_h),Image.BOX)
+        return new_im
+
+    def set_preferences(self):
+        return self.prefs.setPrefsDialog()
 
     def getSerialPorts(self):
         """
@@ -521,6 +631,56 @@ class GuiMain(QMainWindow):
         #if event == "finished":
         #    playsound(self.app_context.get_resource("assets/finish.wav"))
 
+class Mirrors:
+    '''Image relection options and GUI methods'''
+
+    def __init__(self):
+        self.mirrors = [False, False, False, False]
+        self.dialog = QtWidgets.QDialog()
+        self.result = self.reflectDialog()
+
+    def __toggled(self, box):
+        self.mirrors[box] = not self.mirrors[box]
+
+    def __toggled0(self):
+        self.__toggled(0)
+
+    def __toggled1(self):
+        self.__toggled(1)
+
+    def __toggled2(self):
+        self.__toggled(2)
+
+    def __toggled3(self):
+        self.__toggled(3)
+
+    def reflectDialog(self):
+        self.dialog.setWindowTitle("Reflect image")
+        self.dialog.setWindowModality(Qt.ApplicationModal)
+        self.dialog.resize(200,200)
+        group = QtWidgets.QGroupBox("Add mirrors")
+        group.setFlat(True)
+        check0 = QtWidgets.QCheckBox("Left")
+        check1 = QtWidgets.QCheckBox("Right")
+        check2 = QtWidgets.QCheckBox("Top")
+        check3 = QtWidgets.QCheckBox("Bottom")
+        check0.toggled.connect(self.__toggled0)
+        check1.toggled.connect(self.__toggled1)
+        check2.toggled.connect(self.__toggled2)
+        check3.toggled.connect(self.__toggled3)
+        enter = QtWidgets.QPushButton("OK")
+        enter.clicked.connect(self.dialog.accept)
+        layout = QtWidgets.QVBoxLayout()
+        layout.addWidget(check0)
+        layout.addWidget(check1)
+        layout.addWidget(check2)
+        layout.addWidget(check3)
+        group.setLayout(layout)
+        vbox = QtWidgets.QVBoxLayout()
+        vbox.addWidget(group)
+        vbox.addWidget(enter)
+        self.dialog.setLayout(vbox)
+        return self.dialog.exec_()
 
 class GenericThread(QThread):
     '''A generic thread wrapper for functions on threads.'''

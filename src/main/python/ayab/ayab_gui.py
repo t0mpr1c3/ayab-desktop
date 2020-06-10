@@ -2,11 +2,13 @@
 
 # Form implementation generated from reading ui file 'src/main/python/ayab/ayab_gui.ui'
 #
-# Created by: PyQt5 UI code generator 5.11.3
+# Created by: PyQt5 UI code generator 5.14.2
 #
 # WARNING! All changes made in this file will be lost!
 
+
 from PyQt5 import QtCore, QtGui, QtWidgets
+
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
@@ -164,6 +166,8 @@ class Ui_MainWindow(object):
         self.menuHelp.setObjectName("menuHelp")
         self.menuTools = QtWidgets.QMenu(self.menubar)
         self.menuTools.setObjectName("menuTools")
+        self.menuPreferences = QtWidgets.QMenu(self.menubar)
+        self.menuPreferences.setObjectName("menuPreferences")
         self.menuImage_Actions = QtWidgets.QMenu(self.menubar)
         self.menuImage_Actions.setEnabled(False)
         self.menuImage_Actions.setObjectName("menuImage_Actions")
@@ -183,26 +187,33 @@ class Ui_MainWindow(object):
         self.actionHelp.setObjectName("actionHelp")
         self.actionInvert = QtWidgets.QAction(MainWindow)
         self.actionInvert.setObjectName("actionInvert")
+        self.actionStretch = QtWidgets.QAction(MainWindow)
+        self.actionStretch.setObjectName("actionStretch")
         self.actionRepeat = QtWidgets.QAction(MainWindow)
         self.actionRepeat.setObjectName("actionRepeat")
-        self.actionMirror = QtWidgets.QAction(MainWindow)
-        self.actionMirror.setObjectName("actionMirror")
+        self.actionReflect = QtWidgets.QAction(MainWindow)
+        self.actionReflect.setObjectName("actionReflect")
+        self.actionHorizontal_Flip = QtWidgets.QAction(MainWindow)
+        self.actionHorizontal_Flip.setObjectName("actionHorizontal_Flip")
+        self.actionVertical_Flip = QtWidgets.QAction(MainWindow)
+        self.actionVertical_Flip.setObjectName("actionVertical_Flip")
         self.actionRotate_Left = QtWidgets.QAction(MainWindow)
         self.actionRotate_Left.setObjectName("actionRotate_Left")
         self.actionRotate_Right = QtWidgets.QAction(MainWindow)
         self.actionRotate_Right.setObjectName("actionRotate_Right")
-        self.actionSmart_Resize = QtWidgets.QAction(MainWindow)
-        self.actionSmart_Resize.setObjectName("actionSmart_Resize")
-        self.actionVertical_Flip = QtWidgets.QAction(MainWindow)
-        self.actionVertical_Flip.setObjectName("actionVertical_Flip")
+        self.actionSetPreferences = QtWidgets.QAction(MainWindow)
+        self.actionSetPreferences.setObjectName("actionSetPreferences")
         self.menuFile.addAction(self.actionQuit)
         self.menuHelp.addAction(self.actionAbout)
         self.menuTools.addAction(self.actionLoad_AYAB_Firmware)
+        self.menuPreferences.addAction(self.actionSetPreferences)
         self.menuImage_Actions.addAction(self.actionInvert)
+        self.menuImage_Actions.addAction(self.actionStretch)
         self.menuImage_Actions.addAction(self.actionRepeat)
+        self.menuImage_Actions.addAction(self.actionReflect)
         self.menuImage_Actions.addSeparator()
+        self.menuImage_Actions.addAction(self.actionHorizontal_Flip)
         self.menuImage_Actions.addAction(self.actionVertical_Flip)
-        self.menuImage_Actions.addAction(self.actionMirror)
         self.menuImage_Actions.addSeparator()
         self.menuImage_Actions.addAction(self.actionRotate_Left)
         self.menuImage_Actions.addAction(self.actionRotate_Right)
@@ -210,6 +221,7 @@ class Ui_MainWindow(object):
         self.menubar.addAction(self.menuFile.menuAction())
         self.menubar.addAction(self.menuImage_Actions.menuAction())
         self.menubar.addAction(self.menuTools.menuAction())
+        self.menubar.addAction(self.menuPreferences.menuAction())
         self.menubar.addAction(self.menuHelp.menuAction())
 
         self.retranslateUi(MainWindow)
@@ -232,6 +244,7 @@ class Ui_MainWindow(object):
         self.menuFile.setTitle(_translate("MainWindow", "File"))
         self.menuHelp.setTitle(_translate("MainWindow", "Help"))
         self.menuTools.setTitle(_translate("MainWindow", "Tools"))
+        self.menuPreferences.setTitle(_translate("MainWindow", "Preferences"))
         self.menuImage_Actions.setTitle(_translate("MainWindow", "Image Actions"))
         self.actionLoad_AYAB_Firmware.setText(_translate("MainWindow", "Load AYAB Firmware"))
         self.actionQuit.setText(_translate("MainWindow", "Quit"))
@@ -241,15 +254,18 @@ class Ui_MainWindow(object):
         self.actionHelp.setText(_translate("MainWindow", "Help"))
         self.actionInvert.setText(_translate("MainWindow", "Invert"))
         self.actionInvert.setShortcut(_translate("MainWindow", "Ctrl+I"))
+        self.actionStretch.setText(_translate("MainWindow", "Stretch"))
+        self.actionStretch.setShortcut(_translate("MainWindow", "Ctrl+S"))
         self.actionRepeat.setText(_translate("MainWindow", "Repeat"))
         self.actionRepeat.setShortcut(_translate("MainWindow", "Ctrl+R"))
-        self.actionMirror.setText(_translate("MainWindow", "Mirror"))
-        self.actionMirror.setShortcut(_translate("MainWindow", "Ctrl+Up"))
+        self.actionReflect.setText(_translate("MainWindow", "Reflect"))
+        self.actionReflect.setShortcut(_translate("MainWindow", "Ctrl+M"))
+        self.actionHorizontal_Flip.setText(_translate("MainWindow", "Horizontal_Flip"))
+        self.actionHorizontal_Flip.setShortcut(_translate("MainWindow", "Ctrl+Up"))
+        self.actionVertical_Flip.setText(_translate("MainWindow", "Vertical Flip"))
+        self.actionVertical_Flip.setShortcut(_translate("MainWindow", "Ctrl+Down"))
         self.actionRotate_Left.setText(_translate("MainWindow", "Rotate Left"))
         self.actionRotate_Left.setShortcut(_translate("MainWindow", "Ctrl+Left"))
         self.actionRotate_Right.setText(_translate("MainWindow", "Rotate Right"))
         self.actionRotate_Right.setShortcut(_translate("MainWindow", "Ctrl+Right"))
-        self.actionSmart_Resize.setText(_translate("MainWindow", "Smart Resize"))
-        self.actionVertical_Flip.setText(_translate("MainWindow", "Vertical Flip"))
-        self.actionVertical_Flip.setShortcut(_translate("MainWindow", "Ctrl+Down"))
-
+        self.actionSetPreferences.setText(_translate("MainWindow", "Set Preferences"))
