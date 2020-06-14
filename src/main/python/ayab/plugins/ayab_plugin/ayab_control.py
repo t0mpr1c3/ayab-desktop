@@ -187,7 +187,7 @@ class AYABControl(object):
             imgRow, color, indexToSend, sendBlankLine, lastLine = self.__knit_func(lineNumber, imgHeight)
             
             # create bitarray
-            bits = self._choose_needles(color, sendBlankLine)
+            bits = self._choose_needles(color, indexToSend, sendBlankLine)
 
             # TODO implement CRC8
             crc8 = 0x00
@@ -230,7 +230,7 @@ class AYABControl(object):
         else:
             return True  # image finished
 
-    def _select_needles(self, color, sendBlankLine):
+    def _select_needles(self, color, indexToSend, sendBlankLine):
         bits = bitarray([False] * MACHINE_WIDTH, endian="little")
 
         if (color == 0 and self.__knitting_mode == KnittingMode.CLASSIC_RIBBER_1.value) \
