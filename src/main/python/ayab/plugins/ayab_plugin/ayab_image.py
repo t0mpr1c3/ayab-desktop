@@ -19,6 +19,7 @@
 #    https://github.com/AllYarnsAreBeautiful/ayab-desktop
 
 from PIL import Image
+from bitarray import bitarray
 import numpy as np
 
 MACHINE_WIDTH = 200
@@ -86,7 +87,7 @@ class ayabImage(object):
         self.__imageColors = \
             [[0 for i in range(num_colors)] for j in range(imgHeight)]
         self.__imageExpanded = \
-            [[0 for i in range(imgWidth)] for j in range(num_colors*imgHeight)]
+            [bitarray([False] * imgWidth) for j in range(num_colors * imgHeight)]
         # Limit number of colors in image
         quantized = self.__image.quantize(num_colors, dither=None)
         # Order colors most-frequent first
@@ -97,17 +98,17 @@ class ayabImage(object):
         self.__image = quantized
         self.__image = self.__image.remap_palette(dest_map)
         # Make internal representations of image
-        for row in range(0, imgHeight):
-            for col in range(0, imgWidth):
+        for row in range(imgHeight):
+            for col in range(imgWidth):
                 pxl = self.__image.getpixel((col, row))
-                for color in range(0, num_colors):
+                for color in range(num_colors):
                     if pxl == color:
                         # color map
                         self.__imageIntern[row][col] = color
                         # amount of bits per color per line
                         self.__imageColors[row][color] += 1
                         # colors separated per line
-                        self.__imageExpanded[(num_colors*row)+color][col] = 1
+                        self.__imageExpanded[(num_colors * row)+color][col] = True
         return
 
     def __calcImgStartStopNeedles(self):

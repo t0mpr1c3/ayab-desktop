@@ -28,6 +28,7 @@ from bitarray import bitarray
 from enum import Enum
 
 MACHINE_WIDTH = 200
+BLOCK_LENGTH = 256
 
 class KnittingState(Enum):
     NONE = 0
@@ -164,17 +165,13 @@ class AYABControl(object):
         return
 
     def __cnfLine(self, lineNumber):
-        imgHeight = self.__image.imgHeight()
-        lenImgExpanded = len(self.__image.imageExpanded())
-
-        # initialize bitarray to 0x00
-        bits = bitarray([False] * MACHINE_WIDTH, endian="little")
-
-        if lineNumber < 256:
+        if lineNumber >= BLOCK_LENGTH:
+            self.__logger.error("requested lineNumber out of range")
+            return True # stop knitting
+        else:
             # TODO some better algorithm for block wrapping
-            # if the last requested line number was 255, wrap to next block of
-            # lines
-            if self.__formerRequest == 255 and lineNumber == 0:
+            if self.__formerRequest == BLOCK_LENGTH - 1 and lineNumber == 0:
+                # wrap to next block of lines
                 self.__lineBlock += 1
 
             # store requested line number for next request
@@ -182,39 +179,15 @@ class AYABControl(object):
             requestedLine = lineNumber
 
             # adjust lineNumber with current block
-            lineNumber = lineNumber + 256 * self.__lineBlock
+            lineNumber += BLOCK_LENGTH * self.__lineBlock
 
+            imgHeight = self.__image.imgHeight()
+        
             # work out which line of data to send
-            imgRow, color, indexToSend, sendBlankLine, lastLine = self.__knit_func(lineNumber, imgHeight, lenImgExpanded)
-
-            # assign pixeldata
-            imgStartNeedle = self.__image.imgStartNeedle()
-            if imgStartNeedle < 0:
-                imgStartNeedle = 0
-
-            imgStopNeedle = self.__image.imgStopNeedle()
-            if imgStopNeedle > MACHINE_WIDTH - 1:
-                imgStopNeedle = MACHINE_WIDTH - 1
-
-            # set the bitarray
-            if (color == 0 and self.__knitting_mode == KnittingMode.CLASSIC_RIBBER_1.value) \
-                    or (color == self._numColors - 1
-                        and (self.__knitting_mode == KnittingMode.MIDDLECOLORSTWICE_RIBBER.value
-                             or self.__knitting_mode == KnittingMode.HEARTOFPLUTO_RIBBER.value)):
-
-                for col in range(0, MACHINE_WIDTH):
-                    if col < imgStartNeedle \
-                            or col > imgStopNeedle:
-                        bits[col] = True
-
-            for col in range(0, self.__image.imgWidth()):
-                pxl = (self.__image.imageExpanded())[indexToSend][col]
-                # take the image offset into account
-                if pxl == 1 and sendBlankLine is False:
-                    pxlNumber = col + self.__image.imgStartNeedle()
-                    # TODO implement for generic machine width
-                    if 0 <= pxlNumber and pxlNumber < MACHINE_WIDTH:
-                        bits[pxlNumber] = True
+            imgRow, color, indexToSend, sendBlankLine, lastLine = self.__knit_func(lineNumber, imgHeight)
+            
+            # create bitarray
+            bits = self._choose_needles(color, indexToSend, sendBlankLine)
 
             # TODO implement CRC8
             crc8 = 0x00
@@ -238,36 +211,46 @@ class AYABControl(object):
                 msg += ' indexToSend: ' + str(indexToSend)
                 msg += ' color: ' + str(color)
                 # msg += ' ' + str((self.__image.imageExpanded())[indexToSend])
+                self._progress["color"] = colorNames[color]
             self.__logger.debug(msg)
 
             if self.__knitting_mode == KnittingMode.SINGLEBED.value:
                 self._progress["color"] = ""
-                pass
-            elif sendBlankLine is True:
-                pass
-            else:
-                self._progress["color"] = colorNames[color]
-                pass
 
             # sending line progress to gui
             self._progress["current_row"] = imgRow + 1
             self._progress["total_rows"] = imgHeight
             self._progress["repeats"] = self.__infRepeat_repeats
 
+        if not lastLine:
+            return False # keep knitting
+        elif self._infRepeat:
+            self.__infRepeat_repeats += 1
+            return False # keep knitting
         else:
-            self.__logger.error("requested lineNumber out of range")
+            return True  # image finished
 
-        if lastLine:
-            if self._infRepeat:
-                self.__infRepeat_repeats += 1
-                return False # keep knitting
-            else:
-                return True  # image finished
-        else:
-            return False     # keep knitting
+    def _select_needles(self, color, indexToSend, sendBlankLine):
+        bits = bitarray([False] * MACHINE_WIDTH, endian="little")
+        firstneedle = max(0, self.__image.imgStartNeedle())
+        lastneedle = min(self.__image.imgWidth() + self.__image.imgStartNeedle(), MACHINE_WIDTH)
 
+        if (color == 0 and self.__knitting_mode == KnittingMode.CLASSIC_RIBBER_1.value) \
+                or (color == self._numColors - 1
+                    and (self.__knitting_mode == KnittingMode.MIDDLECOLORSTWICE_RIBBER.value
+                         or self.__knitting_mode == KnittingMode.HEARTOFPLUTO_RIBBER.value)):
+            bits[0:firstneedle] = True
+            bits[lastneedle:MACHINE_WIDTH] = True
+
+        if not sendBlankLine:
+            firstpixel = firstneedle - self.__image.imgStartNeedle()
+            lastpixel = lastneedle - self.__image.imgStartNeedle()
+            bits[firstneedle:lastneedle] = (self.__image.imageExpanded())[indexToSend][firstpixel:lastpixel]
+
+        return bits
+    
     # singlebed, 2 color
-    def _singlebed_2col(self, lineNumber, imgHeight, lenImgExpanded):
+    def _singlebed_2col(self, lineNumber, imgHeight):
         lineNumber += self._startLine
 
         # when knitting infinitely, keep the requested
@@ -295,7 +278,9 @@ class AYABControl(object):
         return imgRow, color, indexToSend, sendBlankLine, lastLine
 
     # doublebed, 2 color
-    def _doublebed_2col(self, lineNumber, imgHeight, lenImgExpanded):
+    def _doublebed_2col(self, lineNumber, imgHeight):
+        lenImgExpanded = 2 * imgHeight
+        
         lineNumber += 2 * self._startLine
 
         # calculate line number index for colors
@@ -325,7 +310,9 @@ class AYABControl(object):
         return imgRow, color, indexToSend, sendBlankLine, lastLine
 
     # doublebed, multicolor
-    def _doublebed_multicol(self, lineNumber, imgHeight, lenImgExpanded):
+    def _doublebed_multicol(self, lineNumber, imgHeight):
+        lenImgExpanded = self._numColors * imgHeight
+        
         # halve lineNumber because every second line is BLANK
         sendBlankLine = odd(lineNumber)
         h = lineNumber // 2
@@ -349,7 +336,7 @@ class AYABControl(object):
         return imgRow, color, indexToSend, sendBlankLine, lastLine
 
     # Ribber, Middle-Colors-Twice
-    def _middlecoltwice(self, lineNumber, imgHeight, lenImgExpanded):
+    def _middlecoltwice(self, lineNumber, imgHeight):
 
         # doublebed middle-colors-twice multicolor
         # 0-00 1-11 2-22 3-33 4-44 5-55 .. (imgRow)
@@ -390,8 +377,8 @@ class AYABControl(object):
 
     # doublebed, multicolor <3 of pluto
     # rotates middle colors
-    def _heartofpluto(self, lineNumber, imgHeight, lenImgExpanded):
-
+    def _heartofpluto(self, lineNumber, imgHeight):
+        
         # doublebed <3 of pluto multicolor
         # 0-00 1-11 2-22 3-33 4-44 5-55 .. (imgRow)
         # 0123 4567 8911 1111 1111 2222 .. (lineNumber)
@@ -428,8 +415,9 @@ class AYABControl(object):
 
     # Ribber, Circular
     # not restricted to 2 colors
-    def _circular_ribber(self, lineNumber, imgHeight, lenImgExpanded):
-
+    def _circular_ribber(self, lineNumber, imgHeight):
+        lenImgExpanded = self._numColors * imgHeight
+        
         # A B  A B  A B  .. (color)
         # 0-0- 1-1- 2-2- .. (imgRow)
         # 0 1  2 3  4 5  .. (indexToSend)
