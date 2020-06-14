@@ -182,10 +182,9 @@ class AYABControl(object):
             lineNumber += BLOCK_LENGTH * self.__lineBlock
 
             imgHeight = self.__image.imgHeight()
-            lenImgExpanded = len(self.__image.imageExpanded())
-
+        
             # work out which line of data to send
-            imgRow, color, indexToSend, sendBlankLine, lastLine = self.__knit_func(lineNumber, imgHeight, lenImgExpanded)
+            imgRow, color, indexToSend, sendBlankLine, lastLine = self.__knit_func(lineNumber, imgHeight)
             
             # create bitarray
             bits = self._choose_needles(color, sendBlankLine)
@@ -231,7 +230,7 @@ class AYABControl(object):
         else:
             return True  # image finished
 
-    def _select_needles(color, sendBlankLine):
+    def _select_needles(self, color, sendBlankLine):
         bits = bitarray([False] * MACHINE_WIDTH, endian="little")
 
         if (color == 0 and self.__knitting_mode == KnittingMode.CLASSIC_RIBBER_1.value) \
@@ -252,7 +251,7 @@ class AYABControl(object):
         return bits
     
     # singlebed, 2 color
-    def _singlebed_2col(self, lineNumber, imgHeight, lenImgExpanded):
+    def _singlebed_2col(self, lineNumber, imgHeight):
         lineNumber += self._startLine
 
         # when knitting infinitely, keep the requested
@@ -280,7 +279,9 @@ class AYABControl(object):
         return imgRow, color, indexToSend, sendBlankLine, lastLine
 
     # doublebed, 2 color
-    def _doublebed_2col(self, lineNumber, imgHeight, lenImgExpanded):
+    def _doublebed_2col(self, lineNumber, imgHeight):
+        lenImgExpanded = self._numColors * imgHeight
+        
         lineNumber += 2 * self._startLine
 
         # calculate line number index for colors
@@ -310,7 +311,9 @@ class AYABControl(object):
         return imgRow, color, indexToSend, sendBlankLine, lastLine
 
     # doublebed, multicolor
-    def _doublebed_multicol(self, lineNumber, imgHeight, lenImgExpanded):
+    def _doublebed_multicol(self, lineNumber, imgHeight):
+        lenImgExpanded = self._numColors * imgHeight
+        
         # halve lineNumber because every second line is BLANK
         sendBlankLine = odd(lineNumber)
         h = lineNumber // 2
@@ -334,7 +337,7 @@ class AYABControl(object):
         return imgRow, color, indexToSend, sendBlankLine, lastLine
 
     # Ribber, Middle-Colors-Twice
-    def _middlecoltwice(self, lineNumber, imgHeight, lenImgExpanded):
+    def _middlecoltwice(self, lineNumber, imgHeight):
 
         # doublebed middle-colors-twice multicolor
         # 0-00 1-11 2-22 3-33 4-44 5-55 .. (imgRow)
@@ -375,8 +378,8 @@ class AYABControl(object):
 
     # doublebed, multicolor <3 of pluto
     # rotates middle colors
-    def _heartofpluto(self, lineNumber, imgHeight, lenImgExpanded):
-
+    def _heartofpluto(self, lineNumber, imgHeight):
+        
         # doublebed <3 of pluto multicolor
         # 0-00 1-11 2-22 3-33 4-44 5-55 .. (imgRow)
         # 0123 4567 8911 1111 1111 2222 .. (lineNumber)
@@ -413,8 +416,9 @@ class AYABControl(object):
 
     # Ribber, Circular
     # not restricted to 2 colors
-    def _circular_ribber(self, lineNumber, imgHeight, lenImgExpanded):
-
+    def _circular_ribber(self, lineNumber, imgHeight):
+        lenImgExpanded = self._numColors * imgHeight
+        
         # A B  A B  A B  .. (color)
         # 0-0- 1-1- 2-2- .. (imgRow)
         # 0 1  2 3  4 5  .. (indexToSend)
