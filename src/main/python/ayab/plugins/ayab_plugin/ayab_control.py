@@ -280,7 +280,7 @@ class AYABControl(object):
 
     # doublebed, 2 color
     def _doublebed_2col(self, lineNumber, imgHeight):
-        lenImgExpanded = self._numColors * imgHeight
+        lenImgExpanded = 2 * imgHeight
         
         lineNumber += 2 * self._startLine
 
