@@ -188,7 +188,7 @@ class AYABControl(object):
             imgRow, color, indexToSend, sendBlankLine, lastLine = self.__knit_func(lineNumber, imgHeight, lenImgExpanded)
             
             # create bitarray
-            bits = self._choose_needles(color, sendBlankline)
+            bits = self._choose_needles(color, sendBlankLine)
 
             # TODO implement CRC8
             crc8 = 0x00
