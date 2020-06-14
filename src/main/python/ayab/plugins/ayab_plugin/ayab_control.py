@@ -232,18 +232,17 @@ class AYABControl(object):
 
     def _select_needles(self, color, indexToSend, sendBlankLine):
         bits = bitarray([False] * MACHINE_WIDTH, endian="little")
+        firstneedle = max(0, self.__image.imgStartNeedle())
+        lastneedle = min(self.__image.imgWidth() + self.__image.imgStartNeedle(), MACHINE_WIDTH)
 
         if (color == 0 and self.__knitting_mode == KnittingMode.CLASSIC_RIBBER_1.value) \
                 or (color == self._numColors - 1
                     and (self.__knitting_mode == KnittingMode.MIDDLECOLORSTWICE_RIBBER.value
                          or self.__knitting_mode == KnittingMode.HEARTOFPLUTO_RIBBER.value)):
-            for needle in range(MACHINE_WIDTH):
-                if needle < self.__image.imgStartNeedle() or needle > self.__image.imgStopNeedle():
-                    bits[needle] = True
+            bits[0:firstneedle] = True
+            bits[lastneedle:MACHINE_WIDTH] = True
 
         if not sendBlankLine:
-            firstneedle = max(0, self.__image.imgStartNeedle())
-            lastneedle = min(self.__image.imgWidth() + self.__image.imgStartNeedle(), MACHINE_WIDTH)
             firstpixel = firstneedle - self.__image.imgStartNeedle()
             lastpixel = lastneedle - self.__image.imgStartNeedle()
             bits[firstneedle:lastneedle] = (self.__image.imageExpanded())[indexToSend][firstpixel:lastpixel]
