@@ -663,13 +663,6 @@
       </widget>
      </widget>
     </item>
-    <item>
-     <widget class="QPushButton" name="configure_button">
-      <property name="text">
-       <string>2. Configure</string>
-      </property>
-     </widget>
-    </item>
    </layout>
   </widget>
  </widget>

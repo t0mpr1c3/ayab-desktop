@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'ayab_options.ui'
+# Form implementation generated from reading ui file 'src/main/python/ayab/plugins/ayab_plugin/ayab_options.ui'
 #
 # Created by: PyQt5 UI code generator 5.14.2
 #
@@ -327,9 +327,6 @@ class Ui_DockWidget(object):
         self.verticalLayout_4.addWidget(self.label_progress, 0, QtCore.Qt.AlignHCenter)
         self.tabWidget.addTab(self.tab_status, "")
         self.verticalLayout.addWidget(self.tabWidget)
-        self.configure_button = QtWidgets.QPushButton(self.ayab_config)
-        self.configure_button.setObjectName("configure_button")
-        self.verticalLayout.addWidget(self.configure_button)
         DockWidget.setWidget(self.ayab_config)
 
         self.retranslateUi(DockWidget)
@@ -361,4 +358,3 @@ class Ui_DockWidget(object):
         self.label_9.setText(_translate("DockWidget", "Progress"))
         self.label_progress.setText(_translate("DockWidget", "progress"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_status), _translate("DockWidget", "Status"))
-        self.configure_button.setText(_translate("DockWidget", "2. Configure"))
