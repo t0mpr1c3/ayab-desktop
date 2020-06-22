@@ -76,7 +76,6 @@ class FSM (object):
         # Events that trigger state changes
         self.NO_IMAGE.addTransition(self.__parent.signalImageLoaded, self.GOT_IMAGE)
         self.NOT_CONFIGURED.addTransition(self.__parent.ui.knit_button.clicked, self.CONFIGURING)
-        self.CONFIGURING.addTransition(self.__parent.plugin.ui.configure_button.clicked, self.CONFIGURING)
         self.CONFIGURING.addTransition(self.__parent.signalImageLoaded, self.NOT_CONFIGURED)
         self.CONFIGURING.addTransition(self.__parent.signalImageTransformed, self.NOT_CONFIGURED)
         self.CONFIGURING.addTransition(self.__parent.signalConfigured, self.KNITTING)
