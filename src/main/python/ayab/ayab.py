@@ -25,12 +25,10 @@ from os import path, mkdir
 import logging
 import locale
 
-from bitarray import bitarray
 import numpy as np
 
-from PyQt5 import QtWidgets, QtGui, QtCore
 from PyQt5.QtWidgets import QMainWindow, QGraphicsView, QApplication, QMessageBox, QFrame, QFileDialog
-from PyQt5.QtCore import Qt, QThread, QLocale, QCoreApplication, QSettings, pyqtSignal
+from PyQt5.QtCore import Qt, QTranslator, QThread, QLocale, QCoreApplication, QSettings, pyqtSignal
 
 from PIL import Image
 
@@ -45,7 +43,8 @@ from .ayab_preferences import Preferences, str2bool
 from .plugins.ayab_plugin import AyabPlugin
 from .plugins.ayab_plugin.firmware_flash import FirmwareFlash
 from .plugins.ayab_plugin.ayab_progress import KnitProgress
-from .plugins.ayab_plugin.ayab_control import KnittingMode, Progress
+from .plugins.ayab_plugin.ayab_control import Progress
+from .plugins.ayab_plugin.ayab_options import Alignment
 
 # Temporal serial imports.
 import serial
@@ -53,7 +52,6 @@ import serial.tools.list_ports
 
 
 # TODO move to generic configuration
-MACHINE_WIDTH = 200
 
 userdata_path = path.expanduser(path.join("~", "AYAB"))
 if not path.isdir(userdata_path):
@@ -85,21 +83,21 @@ class GuiMain(QMainWindow):
 
     GuiMain inherits from QMainWindow and instantiates a window with the form components form ayab_gui.UiForm.
     """
-    signalUpdateProgressBar = pyqtSignal(int, int, int, 'QString')
-    signalUpdateKnitProgress = pyqtSignal(Progress, int)
-    signalUpdateStatus = pyqtSignal(int, int, 'QString', int)
-    signalUpdateNotification = pyqtSignal('QString')
-    signalDisplayPopUp = pyqtSignal('QString', 'QString')
-    signalDisplayBlockingPopUp = pyqtSignal('QString', 'QString')
-    signalPlaysound = pyqtSignal('QString')
-    signalUpdateNeedles = pyqtSignal(int, int)
-    signalUpdateAlignment = pyqtSignal(int)
-    signalImageLoaded = pyqtSignal()
-    signalImageTransformed = pyqtSignal()
-    signalConfigureFail = pyqtSignal()
-    signalConfigured = pyqtSignal()
-    # signalDoneKnitProgress = pyqtSignal()
-    signalDoneKnitting = pyqtSignal(bool)
+    signal_update_progress_bar = pyqtSignal(int, int, int, 'QString')
+    signal_update_knit_progress = pyqtSignal(Progress, int)
+    signal_update_status = pyqtSignal(int, int, 'QString', int)
+    signal_update_notification = pyqtSignal('QString')
+    signal_display_popup = pyqtSignal('QString', 'QString')
+    signal_display_blocking_popup = pyqtSignal('QString', 'QString')
+    signal_playsound = pyqtSignal('QString')
+    signal_update_needles = pyqtSignal(int, int)
+    signal_update_alignment = pyqtSignal(Alignment)
+    signal_image_loaded = pyqtSignal()
+    signal_image_transformed = pyqtSignal()
+    signal_configure_fail = pyqtSignal()
+    signal_configured = pyqtSignal()
+    # signal_doneKnitProgress = pyqtSignal()
+    signal_done_knitting = pyqtSignal(bool)
 
     def __init__(self, app_context):
         super(GuiMain, self).__init__(None)
@@ -113,7 +111,7 @@ class GuiMain(QMainWindow):
         # create UI
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
-        self.__setupMenuBar()
+        self.__setup_menubar()
         self.scene = Scene(self)
         self.kp = KnitProgress(self.ui)
         self.plugin = AyabPlugin()
@@ -132,11 +130,11 @@ class GuiMain(QMainWindow):
         else:
             self.plugin.ui.autoMirror_checkbox.setCheckState(Qt.Unchecked)
         alignment_combo_box = self.plugin.ui.alignment_combo_box
-        alignment_combo_box.setCurrentIndex(self.scene.imageAlignment.value)
+        alignment_combo_box.setCurrentIndex(self.scene.alignment.value)
 
         # clear progress and status bar
         self.ui.label_notifications.setText("")
-        self.resetProgressBar()
+        self.reset_progress_bar()
 
         # show UI
         self.showMaximized()
@@ -151,11 +149,11 @@ class GuiMain(QMainWindow):
         self.fs.machine.start()
         return
 
-    def resetProgressBar(self):
+    def reset_progress_bar(self):
         self.ui.label_current_row.setText("")
         self.ui.label_current_color.setText("")
 
-    def updateProgressBar(self, row, total=0, repeats=0, colorSymbol=""):
+    def update_progress_bar(self, row, total=0, repeats=0, colorSymbol=""):
         '''Updates the color and row in progress bar'''
         if row < 0:
             return
@@ -167,7 +165,7 @@ class GuiMain(QMainWindow):
         self.ui.label_current_color.setText(text)
 
         # Store to local variable
-        self.scene.var_progress = row
+        self.scene.row_progress = row
         self.scene.refresh()
 
         # Update label
@@ -180,7 +178,7 @@ class GuiMain(QMainWindow):
         self.ui.label_current_row.setText(text)
         self.plugin.ui.label_progress.setText("{0}/{1}".format(row, total))
 
-    def updateStatus(self, hall_l, hall_r, carriage_type, carriage_position):
+    def update_status(self, hall_l, hall_r, carriage_type, carriage_position):
         self.plugin.ui.progress_hall_l.setValue(hall_l)
         self.plugin.ui.label_hall_l.setText(str(hall_l))
         self.plugin.ui.progress_hall_r.setValue(hall_r)
@@ -188,12 +186,12 @@ class GuiMain(QMainWindow):
         self.plugin.ui.slider_position.setValue(carriage_position)
         self.plugin.ui.label_carriage.setText(carriage_type)
         
-    def updateNotification(self, text):
+    def update_notification(self, text):
         '''Updates the Notification field'''
         logging.info("Notification: " + text)
         self.ui.label_notifications.setText(text)
 
-    def displayBlockingPopUp(self, message="", message_type="info"):
+    def display_blocking_popup(self, message="", message_type="info"):
         logging.debug("MessageBox {}: '{}'".format(message_type, message))
         box_function = {
             "error": QMessageBox.critical,
@@ -212,24 +210,24 @@ class GuiMain(QMainWindow):
         if ret == QMessageBox.Ok:
             return True
 
-    def updateKnitProgress(self, progress, row_multiplier):
+    def update_knit_progress(self, progress, row_multiplier):
         self.kp.update(progress, row_multiplier)
         # if progress.current_row > 0 and progress.current_row == progress.total_rows:
-        #     self.signalDoneKnitProgress.emit()
+        #     self.signal_done_knit_progress.emit()
 
     def wheelEvent(self, event):
-        self.scene.zoom(event)
+        self.scene.zoom = event
 
     def __setup_behavior(self):
         # UI actions
-        self.ui.load_file_button.clicked.connect(self.file_select_dialog)
-        self.ui.filename_lineedit.returnPressed.connect(self.file_select_dialog)
+        self.ui.load_file_button.clicked.connect(self.open_file_select_dialog)
+        self.ui.filename_lineedit.returnPressed.connect(self.open_file_select_dialog)
         self.ui.cancel_button.clicked.connect(self.plugin.cancel)
         self.ui.actionLoad_AYAB_Firmware.triggered.connect(self.generate_firmware_ui)
         self.ui.image_pattern_view.setDragMode(QGraphicsView.ScrollHandDrag)
 
         # Menu actions
-        self.ui.actionSetPreferences.triggered.connect(self.set_preferences)
+        self.ui.actionSetPreferences.triggered.connect(self.open_preferences_dialog)
         self.ui.actionAbout.triggered.connect(self.open_about_ui)
         self.ui.actionQuit.triggered.connect(QCoreApplication.instance().quit)
         self.ui.actionInvert.triggered.connect(self.scene.invert_image)
@@ -242,70 +240,70 @@ class GuiMain(QMainWindow):
         self.ui.actionRotateRight.triggered.connect(self.scene.rotate_right)
 
         # Signal actions
-        self.signalUpdateProgressBar.connect(self.updateProgressBar)
-        self.signalUpdateStatus.connect(self.updateStatus)
-        self.signalUpdateNotification.connect(self.updateNotification)
-        self.signalPlaysound.connect(self.playsound,
+        self.signal_update_progress_bar.connect(self.update_progress_bar)
+        self.signal_update_status.connect(self.update_status)
+        self.signal_update_notification.connect(self.update_notification)
+        self.signal_playsound.connect(self.playsound,
                                      type=Qt.BlockingQueuedConnection)
-        self.signalDisplayBlockingPopUp.connect(self.displayBlockingPopUp)
-        self.signalDisplayPopUp.connect(self.displayBlockingPopUp)
-        self.signalUpdateKnitProgress.connect(self.updateKnitProgress,
+        self.signal_display_blocking_popup.connect(self.display_blocking_popup)
+        self.signal_display_popup.connect(self.display_blocking_popup)
+        self.signal_update_knit_progress.connect(self.update_knit_progress,
                                               type=Qt.BlockingQueuedConnection)
-        self.signalUpdateNeedles.connect(self.scene.updateNeedles)
-        self.signalUpdateAlignment.connect(self.scene.updateAlignment)
-        self.signalDoneKnitting.connect(self.__reset_ui_after_knitting)
+        self.signal_update_needles.connect(self.scene.update_needles)
+        self.signal_update_alignment.connect(self.scene.update_alignment)
+        self.signal_done_knitting.connect(self.reset_ui_after_knitting)
 
     def start_knitting_process(self):
         # reset knit progress window
         self.kp.reset()
         # disable UI elements at start of knitting
-        self.__depopulateMenuBar()
+        self.__depopulate_menubar()
         self.ui.filename_lineedit.setEnabled(False)        
         self.ui.load_file_button.setEnabled(False)
         # start thread for knit plugin
         self.gt.start()
 
-    def __reset_ui_after_knitting(self, audio: bool):
+    def reset_ui_after_knitting(self, audio: bool):
         # (Re-)enable UI elements after knitting finishes
-        self.__repopulateMenuBar()
+        self.__repopulate_menubar()
         self.ui.filename_lineedit.setEnabled(True)        
         self.ui.load_file_button.setEnabled(True)
         if audio:
             self.__audio("finish")
 
-    def __setupMenuBar(self):
-        self.__actionImageActions = self.ui.menuImageActions.menuAction()
-        self.__actionTools = self.ui.menuTools.menuAction()
-        self.__actionPreferences = self.ui.menuPreferences.menuAction()
-        self.__actionHelp = self.ui.menuHelp.menuAction()
-        self.ui.menubar.addAction(self.__actionTools)
-        self.ui.menubar.addAction(self.__actionPreferences)
-        self.ui.menubar.addAction(self.__actionHelp)
+    def __setup_menubar(self):
+        self.__action_image_actions = self.ui.menuImageActions.menuAction()
+        self.__action_tools = self.ui.menuTools.menuAction()
+        self.__action_preferences = self.ui.menuPreferences.menuAction()
+        self.__action_help = self.ui.menuHelp.menuAction()
+        self.ui.menubar.addAction(self.__action_tools)
+        self.ui.menubar.addAction(self.__action_preferences)
+        self.ui.menubar.addAction(self.__action_help)
 
-    def __depopulateMenuBar(self):
+    def __depopulate_menubar(self):
         try:
-            self.ui.menubar.removeAction(self.__actionImageActions)
+            self.ui.menubar.removeAction(self.__action_image_actions)
         except:
             pass
-        self.ui.menubar.removeAction(self.__actionTools)
+        self.ui.menubar.removeAction(self.__action_tools)
 
-    def __repopulateMenuBar(self):
-        self.ui.menubar.removeAction(self.__actionPreferences)
-        self.ui.menubar.removeAction(self.__actionHelp)
-        self.ui.menubar.addAction(self.__actionImageActions)
-        self.ui.menubar.addAction(self.__actionTools)
-        self.ui.menubar.addAction(self.__actionPreferences)
-        self.ui.menubar.addAction(self.__actionHelp)
+    def __repopulate_menubar(self):
+        self.ui.menubar.removeAction(self.__action_preferences)
+        self.ui.menubar.removeAction(self.__action_help)
+        self.ui.menubar.addAction(self.__action_image_actions)
+        self.ui.menubar.addAction(self.__action_tools)
+        self.ui.menubar.addAction(self.__action_preferences)
+        self.ui.menubar.addAction(self.__action_help)
 
-    def addImageActions(self):
+    def add_image_actions(self):
         # This workaround is necessary because 
         # self.__actionImageActions.setEnabled(True)
         # does not seems to work (at least, not on Ubuntu 16.04)
         # Tom Price June 2020
-        self.__depopulateMenuBar()
-        self.__repopulateMenuBar()
+        self.__depopulate_menubar()
+        self.__repopulate_menubar()
 
-    def file_select_dialog(self):
+    def open_file_select_dialog(self):
         filenameValue = self.ui.filename_lineedit.text()
         if filenameValue == '':
             filePath = self.app_context.get_resource("patterns")
@@ -333,11 +331,11 @@ class GuiMain(QMainWindow):
             logging.error(e)
         else:
             self.scene.refresh()
-            self.signalImageLoaded.emit()
+            self.signal_image_loaded.emit()
             self.statusBar().showMessage(image_str)
             # Tell loaded plugin elements about changed parameters
             width, height = self.scene.image.size
-            self.plugin.setImageDimensions(width, height)
+            self.plugin.set_image_dimensions(width, height)
 
     def generate_firmware_ui(self):
         self.__flash_ui = FirmwareFlash(self)
@@ -355,7 +353,7 @@ class GuiMain(QMainWindow):
         self.__about_ui.label_3.setText("Version " + __version__)
         self.__AboutForm.show()
 
-    def set_preferences(self):
+    def open_preferences_dialog(self):
         return self.prefs.setPrefsDialog()
 
     def getSerialPorts(self):
@@ -415,7 +413,7 @@ def run(app_context):
     QCoreApplication.setApplicationName("ayab")
 
     # load translators
-    translator = QtCore.QTranslator()
+    translator = QTranslator()
     lang_dir = app_context.get_resource("ayab/translations")
     try:
         language = QSettings().value("language")

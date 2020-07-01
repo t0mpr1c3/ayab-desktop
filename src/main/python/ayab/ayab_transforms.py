@@ -18,8 +18,7 @@
 #    https://github.com/AllYarnsAreBeautiful/ayab-desktop
 
 import logging
-from PyQt5 import QtWidgets, QtCore
-from PyQt5.QtCore import Qt
+from PyQt5.QtWidgets import QDialog
 from PIL import Image, ImageOps
 from .ayab_mirrors import Ui_MirrorDialog
 
@@ -122,7 +121,7 @@ class Mirrors:
         self.mirrors[box] = not self.mirrors[box]
 
 
-class MirrorDialog(QtWidgets.QDialog):
+class MirrorDialog (QDialog):
     '''GUI to set preferences'''
 
     def __init__(self, parent):
