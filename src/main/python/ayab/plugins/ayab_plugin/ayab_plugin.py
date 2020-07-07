@@ -25,7 +25,7 @@ from PIL import ImageOps
 from PyQt5.QtCore import QTranslator, QCoreApplication, QLocale, QObjectCleanupHandler
 from PyQt5.QtWidgets import QComboBox, QWidget
 from . import USB_ports
-from .ayab_image import AyabImage
+from .ayab_pattern import AyabPattern
 from .ayab_control import AyabControl
 from .ayab_mailman import SignalEmitter
 from .ayab_options import Options, Alignment, NeedleColor
@@ -137,8 +137,8 @@ class AyabPlugin(object):
         # TODO: detect if previous conf had the same
         # image to avoid re-generating.
 
-        self.__image = AyabImage(image, self.__conf.num_colors)
-        if self.__conf.start_row > self.__image.img_height:
+        self.__pattern = AyabPattern(image, self.__conf.num_colors)
+        if self.__conf.start_row > self.__pattern.pat_height:
             self.mailman.emit_configure_fail(
                 "Start row is larger than the image.")
             return
@@ -149,15 +149,15 @@ class AyabPlugin(object):
             self.mailman.emit_configure_fail(msg)
             return
 
-        # update image
+        # update pattern
         if self.__conf.start_needle and self.__conf.stop_needle:
-            self.__image.set_knit_needles(self.__conf.start_needle,
-                                          self.__conf.stop_needle)
-        self.__image.alignment = self.__conf.alignment
+            self.__pattern.set_knit_needles(self.__conf.start_needle,
+                                            self.__conf.stop_needle)
+        self.__pattern.alignment = self.__conf.alignment
 
         # update progress bar
         self.mailman.emit_progress(self.__conf.start_row + 1,
-                                   self.__image.img_height, 0, "")
+                                   self.__pattern.pat_height, 0, "")
 
         # switch to status tab
         if self.__conf.continuous_reporting is True:
@@ -171,7 +171,7 @@ class AyabPlugin(object):
 
         while True:
             # knit next row
-            result = self.__control.knit(self.__image, self.__conf)
+            result = self.__control.knit(self.__pattern, self.__conf)
             self.__feedback_handler.handle(result)
             # do not need to make copy of progress object to emit to UI thread
             # because signal_update_knit_progress connection blocks this thread
@@ -219,21 +219,3 @@ class AyabPlugin(object):
     def update_start_row(self):  # updates part of progress bar
         start_row_edit = int(self.ui.start_row_edit.value())
         self.mailman.emit_start_row(start_row_edit)
-
-    # def cleanup_ui(self):
-    #     """Cleans up UI elements inside knitting option dock."""
-    #     dock = self.dock
-    #     cleaner = QObjectCleanupHandler()
-    #     cleaner.add(dock.widget())
-    #     self.__qw = QWidget()
-    #     dock.setWidget(self.__qw)
-    #     self.__unset_translator()
-
-    # def __unset_translator(self):
-    #     app = QCoreApplication.instance()
-    #     app.removeTranslator(self.translator)
-
-    # def fail(self):
-    #     # TODO add message info from event
-    #     self.__logger.error("Error while knitting.")
-    #     self.__control.close()
