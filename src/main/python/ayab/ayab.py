@@ -97,7 +97,6 @@ class GuiMain(QMainWindow):
         self.about = About(app_context)
         self.plugin = AyabPlugin()
         self.plugin.setupUi(self)
-        self.progress = Progress()
         self.pb = ProgressBar(self)
         self.kp = KnitProgress(self.ui)
         self.gt = GenericThread(self.plugin.knit)
@@ -136,16 +135,15 @@ class GuiMain(QMainWindow):
         self.fs.machine.start()
 
     def update_start_row(self, start_row):
-        self.progress.row = start_row
-        self.pb.refresh()
+        self.pb.update(start_row)
         self.scene.row_progress = start_row
 
     def set_image_dimensions(self):
         """Set dimensions on GUI"""
         width, height = self.scene.image.size
         self.plugin.set_image_dimensions(width, height)
-        self.progress.row = self.scene.row_progress + 1
-        self.progress.total = height
+        self.pb.row = self.scene.row_progress + 1
+        self.pb.total = height
         self.pb.refresh()
         self.update_notification(
             QCoreApplication.translate("Scene", "Image dimensions") +
@@ -153,8 +151,7 @@ class GuiMain(QMainWindow):
         self.scene.refresh()
 
     def update_progress(self, row, total, repeats, color_symbol):
-        self.progress.update(row, total, repeats, color_symbol)
-        self.pb.refresh()
+        self.pb.update(row, total, repeats, color_symbol)
 
     def reset_notification(self):
         '''Updates the Notification field'''
