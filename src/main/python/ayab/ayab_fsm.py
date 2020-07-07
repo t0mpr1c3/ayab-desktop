@@ -77,7 +77,7 @@ class FSM(object):
         self.NOT_CONFIGURED.entered.connect(parent.menu.add_image_actions)
         self.NOT_CONFIGURED.entered.connect(parent.pb.reset)
         self.CONFIGURING.entered.connect(
-            lambda: parent.plugin.configure(parent.scene.image))
+            lambda: parent.plugin.configure(parent.scene.ayabimage.image))
         self.KNITTING.entered.connect(parent.start_knitting_process)
 
     def set_properties(self, ui):

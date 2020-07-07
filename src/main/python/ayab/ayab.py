@@ -140,7 +140,7 @@ class GuiMain(QMainWindow):
 
     def set_image_dimensions(self):
         """Set dimensions on GUI"""
-        width, height = self.scene.image.size
+        width, height = self.scene.ayabimage.image.size
         self.plugin.set_image_dimensions(width, height)
         self.pb.row = self.scene.row_progress + 1
         self.pb.total = height
@@ -186,18 +186,22 @@ class GuiMain(QMainWindow):
         self.menu.ui.action_about.triggered.connect(self.about.show)
         self.menu.ui.action_quit.triggered.connect(
             QCoreApplication.instance().quit)
-        self.menu.ui.action_invert.triggered.connect(self.scene.invert_image)
-        self.menu.ui.action_stretch.triggered.connect(self.scene.stretch_image)
-        self.menu.ui.action_repeat.triggered.connect(self.scene.repeat_image)
-        self.menu.ui.action_reflect.triggered.connect(self.scene.reflect_image)
+        self.menu.ui.action_invert.triggered.connect(
+            self.scene.ayabimage.invert)
+        self.menu.ui.action_stretch.triggered.connect(
+            self.scene.ayabimage.stretch)
+        self.menu.ui.action_repeat.triggered.connect(
+            self.scene.ayabimage.repeat)
+        self.menu.ui.action_reflect.triggered.connect(
+            self.scene.ayabimage.reflect)
         self.menu.ui.action_horizontal_flip.triggered.connect(
-            self.scene.hflip_image)
+            self.scene.ayabimage.hflip)
         self.menu.ui.action_vertical_flip.triggered.connect(
-            self.scene.vflip_image)
+            self.scene.ayabimage.vflip)
         self.menu.ui.action_rotate_left.triggered.connect(
-            self.scene.rotate_left)
+            self.scene.ayabimage.rotate_left)
         self.menu.ui.action_rotate_right.triggered.connect(
-            self.scene.rotate_right)
+            self.scene.ayabimage.rotate_right)
 
     def start_knitting_process(self):
         # reset knit progress window
@@ -240,7 +244,7 @@ class GuiMain(QMainWindow):
         '''Loads an image into self.ui.image_pattern_view using a temporary QGraphicsScene'''
         # TODO Check maximum width of image
         try:
-            self.scene.load_image_file(image_str)
+            self.scene.ayabimage.open(image_str)
         except (OSError, FileNotFoundError):
             notify.display_blocking_popup("Unable to load image file",
                                           "error")  # TODO translate
@@ -249,11 +253,9 @@ class GuiMain(QMainWindow):
             notify.display_blocking_popup("Error loading image file",
                                           "error")  # TODO translate
             logging.error("Error loading image: " + str(e))
+            raise
         else:
-            self.scene.refresh()
-            self.mailbox.image_loaded_flagger.emit()
             self.statusBar().showMessage(image_str)
-            self.set_image_dimensions()
 
     def open_firmware_ui(self):
         self.__flash_ui = FirmwareFlash(self.app_context)

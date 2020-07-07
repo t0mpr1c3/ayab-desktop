@@ -29,12 +29,13 @@ class Transform(Image.Image):
     @author Tom Price
     @date   June 2020
     """
-    def rotate(self, args):
+    def rotate_left(self, args=None):
         # TODO crop width if it exceeds the maximum after transform
-        if not args:
-            logging.debug("image not altered on _rotate_image.")
-        logging.debug("rotating image")
-        return Image.Image.rotate(self, args[0], expand=1)
+        return Image.Image.transpose(self, Image.ROTATE_90)
+
+    def rotate_right(self, args=None):
+        # TODO crop width if it exceeds the maximum after transform
+        return Image.Image.transpose(self, Image.ROTATE_270)
 
     def invert(self, args=None):
         if self.mode == 'RGBA':
@@ -45,10 +46,10 @@ class Transform(Image.Image):
             return ImageOps.invert(self)
 
     def hflip(self, args=None):
-        return ImageOps.mirror(self)
+        return Image.Image.transpose(self, Image.FLIP_LEFT_RIGHT)
 
     def vflip(self, args=None):
-        return ImageOps.flip(self)
+        return Image.Image.transpose(self, Image.FLIP_TOP_BOTTOM)
 
     def repeat(self, args):
         # TODO crop width if it exceeds the maximum after transform

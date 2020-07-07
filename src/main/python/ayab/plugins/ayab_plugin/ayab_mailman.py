@@ -29,8 +29,9 @@ class SignalEmitter(object):
     @author Tom Price
     @date   July 2020
     """
-    def __init__(self, signal_receiver):
+    def __init__(self, signal_receiver, *args, **kwargs):
         self.__mailbox = signal_receiver
+        super().__init__(*args, **kwargs)
 
     def emit_blocking_popup(self, message="", message_type="info"):
         """
@@ -69,6 +70,10 @@ class SignalEmitter(object):
     def emit_start_row(self, start_row):
         """Sends the start_row_updater QtSignal."""
         self.__mailbox.start_row_updater.emit(start_row)
+
+    def emit_image_loaded(self):
+        """Sends the image_loaded_flagger QtSignal."""
+        self.__mailbox.image_loaded_flagger.emit()
 
     def emit_image_transformed(self):
         """Sends the image_transformed_flagger QtSignal."""
