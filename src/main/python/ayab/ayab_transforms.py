@@ -23,7 +23,7 @@ from PIL import Image, ImageOps
 from .ayab_mirrors import Ui_MirrorDialog
 
 
-class Transformable(Image.Image):
+class Transform(Image.Image):
     """Image transforms for AYAB GUI.
 
     @author Tom Price
@@ -54,7 +54,7 @@ class Transformable(Image.Image):
         # TODO crop width if it exceeds the maximum after transform
         """
         Repeat image.
-        Repeat pHorizontal times horizontally, pVertical times vertically
+        Repeat `horizontal` times horizontally, `vertical` times vertically
         Sturla Lange 2017-12-30
         """
         old_h = self.size[1]
@@ -83,14 +83,14 @@ class Transformable(Image.Image):
         h1 = 1 + mirrors[2] + mirrors[3]
         if w1 > 1:
             im = self
-            self = Transformable.hflip(self)
-            self = Transformable.repeat(self, (1, w1))
+            self = Transform.hflip(self)
+            self = Transform.repeat(self, (1, w1))
             for i in range(w0, w1, 2):
                 self.paste(im, (i * w, 0))
         if h1 > 1:
             im = self
-            self = Transformable.vflip(self)
-            self = Transformable.repeat(self, (h1, 1))
+            self = Transform.vflip(self)
+            self = Transform.repeat(self, (h1, 1))
             for i in range(h0, h1, 2):
                 self.paste(im, (0, i * h))
         return self
@@ -99,13 +99,13 @@ class Transformable(Image.Image):
         # TODO crop width if it exceeds the maximum after transform
         """
         Stretch image.
-        Stretch pHorizontal times horizontally, pVertical times vertically
+        Repeat `horizontal` times horizontally, `vertical` times vertically
         Tom Price 2020-05-30
         """
         old_h = self.size[1]
         old_w = self.size[0]
-        new_h = old_h * args[0]  # pVertical
-        new_w = old_w * args[1]  # pHorizontal
+        new_h = old_h * args[0]  # vertical
+        new_w = old_w * args[1]  # horizontal
         return self.resize((new_w, new_h), Image.BOX)
 
 

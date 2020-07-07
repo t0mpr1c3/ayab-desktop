@@ -27,7 +27,7 @@ from PyQt5.QtWidgets import QGraphicsScene, QGraphicsRectItem, QGraphicsView, QI
 from PIL import Image
 from DAKimport import DAKimport
 
-from .ayab_transforms import Transformable, Mirrors
+from .ayab_transforms import Transform, Mirrors
 from .plugins.ayab_plugin.ayab_plugin import SignalEmitter
 from .plugins.ayab_plugin.ayab_options import Alignment
 from .plugins.ayab_plugin.machine import Machine
@@ -44,7 +44,6 @@ class Scene(object):
     LIMIT_BAR_WIDTH = 0.5
 
     def __init__(self, parent):
-        # self.__parent = parent
         self.__image = None
         self.__mailman = SignalEmitter(parent.mailbox)
         default = parent.prefs.settings.value("default_alignment")
@@ -69,12 +68,12 @@ class Scene(object):
 
         # Add pattern and move accordingly to alignment
         pattern = qscene.addPixmap(pixmap)
-        if self.__alignment.name == 'LEFT':
+        if self.__alignment == Alignment.LEFT:
             pos = self.__start_needle - Machine.WIDTH / 2
-        elif self.__alignment.name == 'CENTER':
+        elif self.__alignment == Alignment.CENTER:
             pos = (self.__start_needle + self.__stop_needle - pixmap.width() -
                    Machine.WIDTH) / 2
-        elif self.__alignment.name == 'RIGHT':
+        elif self.__alignment == Alignment.RIGHT:
             pos = self.__stop_needle - pixmap.width() - Machine.WIDTH / 2
         else:
             logging.warning("invalid alignment")
@@ -178,72 +177,59 @@ class Scene(object):
             self.refresh()
 
     def invert_image(self):
-        '''invert current image.'''
-        self.apply_image_transform("invert")
+        '''Invert current image.'''
+        self.apply_image_transform(Transform.invert)
 
     def repeat_image(self):
-        '''repeat current image.'''
-        v = QInputDialog.getInt(
-            None,  # self.__parent,
-            "Repeat",
-            "Vertical",
-            value=1,
-            min=1)
-        h = QInputDialog.getInt(
-            None,  # self.__parent,
-            "Repeat",
-            "Horizontal",
-            value=1,
-            min=1,
-            max=ceil(Machine.WIDTH / self.__image.size[0]))
-        self.apply_image_transform("repeat", v[0], h[0])
+        '''Repeat current image.'''
+        v = QInputDialog.getInt(None, "Repeat", "Vertical", value=1, min=1)
+        h = QInputDialog.getInt(None,
+                                "Repeat",
+                                "Horizontal",
+                                value=1,
+                                min=1,
+                                max=ceil(Machine.WIDTH / self.__image.size[0]))
+        self.apply_image_transform(Transform.repeat, v[0], h[0])
 
     def stretch_image(self):
         '''Public stretch current Image function.'''
-        v = QInputDialog.getInt(
-            None,  # self.__parent,
-            "Stretch",
-            "Vertical",
-            value=1,
-            min=1)
-        h = QInputDialog.getInt(
-            None,  # self.__parent,
-            "Stretch",
-            "Horizontal",
-            value=1,
-            min=1,
-            max=ceil(Machine.WIDTH / self.__image.size[0]))
-        self.apply_image_transform("stretch", v[0], h[0])
+        v = QInputDialog.getInt(None, "Stretch", "Vertical", value=1, min=1)
+        h = QInputDialog.getInt(None,
+                                "Stretch",
+                                "Horizontal",
+                                value=1,
+                                min=1,
+                                max=ceil(Machine.WIDTH / self.__image.size[0]))
+        self.apply_image_transform(Transform.stretch, v[0], h[0])
 
     def reflect_image(self):
         '''Public reflect current Image function.'''
         m = Mirrors()
         if (m.result == QDialog.Accepted):
-            self.apply_image_transform("reflect", m.mirrors)
+            self.apply_image_transform(Transform.reflect, m.mirrors)
 
     def hflip_image(self):
         '''Public horizontal flip current Image function.'''
-        self.apply_image_transform("hflip")
+        self.apply_image_transform(Transform.hflip)
 
     def vflip_image(self):
         '''Public vertical flip current Image function.'''
-        self.apply_image_transform("vflip")
+        self.apply_image_transform(Transform.vflip)
 
     def rotate_left(self):
         '''Public rotate left current Image function.'''
-        self.apply_image_transform("rotate", 90.0)
+        self.apply_image_transform(Transform.rotate, 90.0)
 
     def rotate_right(self):
         '''Public rotate right current Image function.'''
-        self.apply_image_transform("rotate", -90.0)
+        self.apply_image_transform(Transform.rotate, -90.0)
 
-    def apply_image_transform(self, method, *args):
-        '''Executes an image transform specified by key and args.
+    def apply_image_transform(self, transform, *args):
+        '''Executes an image transform specified by function and args.
 
         Calls a transform function, forwarding args and the image,
         and replaces the QtImage on scene.
         '''
-        transform = getattr(Transformable, method)
         try:
             image = transform(self.__image, args)
         except:
