@@ -25,7 +25,7 @@
         <property name="orientation">
          <enum>Qt::Vertical</enum>
         </property>
-        <widget class="QGraphicsView" name="image_pattern_view">
+        <widget class="QGraphicsView" name="scene">
          <property name="geometry">
           <rect>
            <x>0</x>
@@ -35,7 +35,7 @@
           </rect>
          </property>
         </widget>
-        <widget class="QScrollArea" name="area">
+        <widget class="QScrollArea" name="kp">
          <property name="geometry">
           <rect>
            <x>0</x>

@@ -47,7 +47,7 @@ class Scene(object):
         self.__row_progress = 0
 
         # zoom behavior
-        self.__qv = parent.ui.image_pattern_view
+        self.__qv = parent.ui.scene
         self.__qv.setDragMode(QGraphicsView.ScrollHandDrag)
         self.__zoom = 3
 

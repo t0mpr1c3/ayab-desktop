@@ -98,7 +98,7 @@ class GuiMain(QMainWindow):
         self.plugin = AyabPlugin()
         self.plugin.setupUi(self)
         self.pb = ProgressBar(self)
-        self.kp = KnitProgress(self.ui)
+        self.ui.kp = KnitProgress(self)
         self.gt = GenericThread(self.plugin.knit)
 
         # set default knitting configuration options
@@ -164,7 +164,7 @@ class GuiMain(QMainWindow):
         self.ui.label_notifications.setText(text)
 
     def update_knit_progress(self, status, row_multiplier):
-        self.kp.update(status, row_multiplier)
+        self.ui.kp.update(status, row_multiplier)
         # if status.current_row > 0 and status.current_row == status.total_rows:
         #     self.mailbox.done_knit_progress.emit()
 
@@ -205,7 +205,7 @@ class GuiMain(QMainWindow):
 
     def start_knitting_process(self):
         # reset knit progress window
-        self.kp.reset()
+        self.ui.kp.reset()
         # disable UI elements at start of knitting
         self.menu.depopulate()
         self.ui.filename_lineedit.setEnabled(False)
