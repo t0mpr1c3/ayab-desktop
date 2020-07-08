@@ -23,13 +23,6 @@ class Ui_MainWindow(object):
         self.graphics_splitter = QtWidgets.QSplitter(self.central_widget)
         self.graphics_splitter.setOrientation(QtCore.Qt.Vertical)
         self.graphics_splitter.setObjectName("graphics_splitter")
-        self.image_pattern_view = QtWidgets.QGraphicsView(
-            self.graphics_splitter)
-        self.image_pattern_view.setGeometry(QtCore.QRect(0, 0, 700, 686))
-        self.image_pattern_view.setObjectName("image_pattern_view")
-        self.area = QtWidgets.QScrollArea(self.graphics_splitter)
-        self.area.setGeometry(QtCore.QRect(0, 0, 700, 220))
-        self.area.setObjectName("area")
         self.image_side_panel.addWidget(self.graphics_splitter)
         self.progress_layout = QtWidgets.QHBoxLayout()
         self.progress_layout.setSpacing(2)

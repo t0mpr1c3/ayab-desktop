@@ -27,6 +27,7 @@ class Menu(QMenuBar):
         super(QMenuBar, self).__init__(parent)
         self.ui = Ui_MenuBar()
         self.ui.setupUi(self)
+        self.setup()
 
     def setup(self):
         self.addAction(self.ui.menu_tools.menuAction())
