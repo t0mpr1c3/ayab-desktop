@@ -157,7 +157,8 @@ class AyabControl(object):
             self.pattern.pat_width + self.pattern.pat_start_needle,
             Machine.WIDTH)
 
-        # select needles flanking the pattern if necessary to knit the background color
+        # select needles flanking the pattern
+        # if necessary to knit the background color
         if self.knit_mode.flanking_needles(color, self.num_colors):
             bits[0:first_needle] = True
             bits[last_needle:Machine.WIDTH] = True

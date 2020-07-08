@@ -31,7 +31,7 @@ class KnitProgress(QScrollArea):
     """
     def __init__(self, parent):
         super().__init__(parent.ui.graphics_splitter)
-        self.setGeometry(QtCore.QRect(0, 0, 700, 220))
+        self.setGeometry(QRect(0, 0, 700, 220))
         self.setContentsMargins(1, 1, 1, 1)
 
     def reset(self):

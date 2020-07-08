@@ -81,7 +81,7 @@ class Preferences:
         else:
             self.settings.setValue("language", "en_US")
 
-    def set_prefs_dialog(self):
+    def open_dialog(self):
         return PrefsDialog(self).exec_()
 
     def default_locale(self):

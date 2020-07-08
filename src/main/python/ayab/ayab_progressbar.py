@@ -18,28 +18,7 @@
 #    https://github.com/AllYarnsAreBeautiful/ayab-desktop
 
 
-class Progress(object):
-    """Data object for the progress bar."""
-    def __init__(self):
-        self.reset()
-
-    def reset(self):
-        self.row = -1
-        self.total = -1
-        self.repeats = -1
-        self.color = ""
-
-    def update(self, row, total=0, repeats=0, color_symbol=""):
-        if row < 0:
-            return False
-        self.row = row
-        self.total = total
-        self.repeats = repeats
-        self.color = color_symbol
-        return True
-
-
-class ProgressBar(Progress):
+class ProgressBar(object):
     """Methods for the progress bar."""
     def __init__(self, parent):
         self.__row_label = parent.ui.label_current_row
@@ -48,15 +27,23 @@ class ProgressBar(Progress):
         self.reset()
 
     def reset(self):
+        self.row = -1
+        self.total = -1
+        self.repeats = -1
+        self.color = ""
         self.__row_label.setText("")
         self.__color_label.setText("")
         self.__status_label.setText("")
-        super().reset()
-        self.refresh()
 
-    def update(self, *args, **kwargs):
-        if super().update(*args, **kwargs):
-            self.refresh()
+    def update(self, row, total=0, repeats=0, color_symbol=""):
+        if row < 0:
+            return False
+        self.row = row
+        self.total = total
+        self.repeats = repeats
+        self.color = color_symbol
+        self.refresh()
+        return True
 
     def refresh(self):
         '''Updates the color and row in progress bar'''

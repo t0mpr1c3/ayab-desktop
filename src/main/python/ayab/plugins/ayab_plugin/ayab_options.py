@@ -56,16 +56,23 @@ class Options(object):
         self.portname = ui.serial_port_dropdown.currentText()
         self.knit_mode = KnitMode(ui.knitting_mode_box.currentIndex())
         self.num_colors = int(ui.color_edit.value())
-        self.start_row = int(ui.start_row_edit.value()) - 1
+        self.start_row = self.read_start_row(ui)
+        self.inf_repeat = ui.inf_repeat_checkbox.isChecked()
         self.start_needle = NeedleColor.read_start_needle(ui)
         self.stop_needle = NeedleColor.read_stop_needle(ui)
-        self.alignment = Alignment(ui.alignment_combo_box.currentIndex())
-        self.inf_repeat = ui.inf_repeat_checkbox.isChecked()
+        self.alignment = self.read_alignment(ui)
         self.auto_mirror = ui.auto_mirror_checkbox.isChecked()
         self.continuous_reporting = ui.continuous_reporting_checkbox.isChecked(
         )
 
-    def validate_configuration(self):
+    def read_start_row(self, ui):
+        return int(ui.start_row_edit.value()) - 1
+
+    def read_alignment(self, ui):
+        return Alignment(ui.alignment_combo_box.currentIndex())
+
+    def validate(self):
+        """Validate configuration options."""
         if self.start_needle and self.stop_needle:
             if self.start_needle > self.stop_needle:
                 return False, "Invalid needle start and end."
@@ -90,6 +97,7 @@ class Alignment(Enum):
     RIGHT = 2
 
     def add_items(box):
+        """Add items to alignment combo box."""
         box.addItem(QCoreApplication.translate("Alignment", "Center"))
         box.addItem(QCoreApplication.translate("Alignment", "Left"))
         box.addItem(QCoreApplication.translate("Alignment", "Right"))
@@ -100,22 +108,24 @@ class NeedleColor(Enum):
     GREEN = 1
 
     def add_items(box):
+        """Add items to needle color combo box."""
         box.addItem(QCoreApplication.translate("NeedleColor", "orange"))
         box.addItem(QCoreApplication.translate("NeedleColor", "green"))
 
     def read(self, needle):
-        '''Reads the Needle Settings UI Elements and normalizes'''
-        if self.name == "ORANGE":
+        if self == NeedleColor.ORANGE:
             return Machine.WIDTH // 2 - int(needle)
-        elif self.name == "GREEN":
+        elif self == NeedleColor.GREEN:
             return Machine.WIDTH // 2 - 1 + int(needle)
 
     def read_start_needle(ui):
+        '''Read the start needle settings from UI and normalize'''
         start_needle_col = NeedleColor(ui.start_needle_color.currentIndex())
         start_needle_text = ui.start_needle_edit.value()
         return start_needle_col.read(start_needle_text)
 
     def read_stop_needle(ui):
+        '''Read the stop needle settings from UI and normalize'''
         stop_needle_col = NeedleColor(ui.stop_needle_color.currentIndex())
         stop_needle_text = ui.stop_needle_edit.value()
         return stop_needle_col.read(stop_needle_text)

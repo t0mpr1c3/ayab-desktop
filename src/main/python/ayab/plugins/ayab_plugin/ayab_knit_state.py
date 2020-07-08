@@ -53,7 +53,7 @@ class KnitStateMachine(object):
             ayab_control.num_colors)
         if not ayab_control.func_selector():
             return KnitOutput.ERROR_INVALID_SETTINGS
-
+        # else
         ayab_control.logger.debug(options.portname)
         if options.portname == QCoreApplication.translate(
                 "AyabPlugin", "Simulation"):
@@ -63,7 +63,7 @@ class KnitStateMachine(object):
         if not ayab_control.com.open_serial(options.portname):
             ayab_control.logger.error("Could not open serial port")
             return KnitOutput.ERROR_SERIAL_PORT
-
+        # else
         # setup complete
         ayab_control.state = KnitState.INIT
         return KnitOutput.NONE
@@ -80,7 +80,7 @@ class KnitStateMachine(object):
                                           str(rcvParam) + ", expected: " +
                                           str(ayab_control.API_VERSION))
                 return KnitOutput.ERROR_WRONG_API
-
+        # else
         ayab_control.com.req_info()
         return KnitOutput.CONNECTING_TO_MACHINE
 

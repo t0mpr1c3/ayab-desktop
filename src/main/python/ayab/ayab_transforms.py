@@ -31,11 +31,11 @@ class Transform(Image.Image):
     """
     def rotate_left(self, args=None):
         # TODO crop width if it exceeds the maximum after transform
-        return Image.Image.transpose(self, Image.ROTATE_90)
+        return self.transpose(Image.ROTATE_90)
 
     def rotate_right(self, args=None):
         # TODO crop width if it exceeds the maximum after transform
-        return Image.Image.transpose(self, Image.ROTATE_270)
+        return self.transpose(Image.ROTATE_270)
 
     def invert(self, args=None):
         if self.mode == 'RGBA':
@@ -46,10 +46,10 @@ class Transform(Image.Image):
             return ImageOps.invert(self)
 
     def hflip(self, args=None):
-        return Image.Image.transpose(self, Image.FLIP_LEFT_RIGHT)
+        return self.transpose(Image.FLIP_LEFT_RIGHT)
 
     def vflip(self, args=None):
-        return Image.Image.transpose(self, Image.FLIP_TOP_BOTTOM)
+        return self.transpose(Image.FLIP_TOP_BOTTOM)
 
     def repeat(self, args):
         # TODO crop width if it exceeds the maximum after transform
@@ -84,14 +84,14 @@ class Transform(Image.Image):
         h1 = 1 + mirrors[2] + mirrors[3]
         if w1 > 1:
             im = self
-            self = Transform.hflip(self)
-            self = Transform.repeat(self, (1, w1))
+            self = self.Transform.hflip()
+            self = self.Transform.repeat((1, w1))
             for i in range(w0, w1, 2):
                 self.paste(im, (i * w, 0))
         if h1 > 1:
             im = self
-            self = Transform.vflip(self)
-            self = Transform.repeat(self, (h1, 1))
+            self = self.Transform.vflip()
+            self = self.Transform.repeat((h1, 1))
             for i in range(h0, h1, 2):
                 self.paste(im, (0, i * h))
         return self

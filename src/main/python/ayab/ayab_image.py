@@ -23,14 +23,15 @@ from math import ceil
 
 from PIL import Image
 from DAKimport import DAKimport
-from PyQt5.QtWidgets import QInputDialog, QDialog
+from PyQt5.QtWidgets import QInputDialog, QDialog, QFileDialog
 
+from . import notify
 from .ayab_transforms import Transform, Mirrors
-from .plugins.ayab_plugin.ayab_plugin import SignalEmitter
+from .plugins.ayab_plugin.ayab_observable import Observable
 from .plugins.ayab_plugin.machine import Machine
 
 
-class AyabImage(SignalEmitter):
+class AyabImage(Observable):
     """
     Image object with public methods for performing image actions from menu.
     Implemented as PIL.Image with SignalEmitter mixin.
@@ -39,10 +40,46 @@ class AyabImage(SignalEmitter):
     @date   July 2020
     """
     def __init__(self, parent):
+        super().__init__(parent.seer)
         self.image = None
-        super().__init__(parent.mailbox)
+        self.filename = None
+        self.filename_input = parent.ui.filename_lineedit
+        self.statusbar = parent.statusBar()
+        self.app_context = parent.app_context
 
-    def open(self, filename):
+    def select_file(self):
+        filename = self.filename_input.text()
+        if filename == '':
+            filepath = self.app_context.get_resource("patterns")
+        else:
+            filepath = filename
+        selected_file, _ = QFileDialog.getOpenFileName(
+            None, "Open file", filepath,
+            'Images (*.png *.PNG *.jpg *.JPG *.jpeg *.JPEG *.bmp *.BMP *.gif *.GIF *.tiff *.TIFF *.tif *.TIF *.Pat *.pat *.PAT *.Stp *.stp *.STP)'
+        )
+        if selected_file:
+            self.filename = selected_file
+            self.filename_input.setText(selected_file)
+            self.__load(str(selected_file))
+
+    def __load(self, filename):
+        '''Load an image into the graphics scene.'''
+        # TODO Check maximum width of image
+        try:
+            self.__open(filename)
+        except (OSError, FileNotFoundError):
+            notify.display_blocking_popup("Unable to load image file",
+                                          "error")  # TODO translate
+            logging.error("Unable to load " + str(filename))
+        except Exception as e:
+            notify.display_blocking_popup("Error loading image file",
+                                          "error")  # TODO translate
+            logging.error("Error loading image: " + str(e))
+            raise
+        else:
+            self.statusbar.showMessage(filename)
+
+    def __open(self, filename):
         # check for DAK files
         suffix = filename[-4:].lower()
         if (suffix == ".pat" or suffix == ".stp"):
@@ -57,8 +94,8 @@ class AyabImage(SignalEmitter):
         else:
             self.image = open(filename)
         self.image = self.image.convert("RGBA")
-        self.emit_image_dimensions()
-        self.emit_image_loaded()
+        self.emit_got_image_flag()
+        self.emit_image_resizer()
 
     def invert(self):
         self.apply_transform(Transform.invert)
@@ -112,7 +149,7 @@ class AyabImage(SignalEmitter):
             logging.error("Error while executing image transform")
 
         # Update the view
-        self.emit_image_dimensions()
+        self.emit_image_resizer()
 
         # Transition to NOT_CONFIGURED state
-        self.emit_image_transformed()
+        self.emit_new_image_flag()

@@ -20,6 +20,7 @@
 
 import logging
 
+from PyQt5.QtCore import QRect
 from PyQt5.QtGui import QImage, QPixmap, QBrush, QColor
 from PyQt5.QtWidgets import QGraphicsScene, QGraphicsRectItem, QGraphicsView
 
@@ -28,7 +29,7 @@ from .plugins.ayab_plugin.ayab_options import Alignment
 from .plugins.ayab_plugin.machine import Machine
 
 
-class Scene(object):
+class Scene(QGraphicsView):
     """Graphics scene object for UI.
 
     @author Tom Price
@@ -39,6 +40,8 @@ class Scene(object):
     LIMIT_BAR_WIDTH = 0.5
 
     def __init__(self, parent):
+        super().__init__(parent.ui.graphics_splitter)
+        self.setGeometry(QRect(0, 0, 700, 686))
         self.ayabimage = AyabImage(parent)
         default = parent.prefs.settings.value("default_alignment")
         self.__alignment = Alignment(default)
@@ -47,8 +50,7 @@ class Scene(object):
         self.__row_progress = 0
 
         # zoom behavior
-        self.__qv = parent.ui.scene
-        self.__qv.setDragMode(QGraphicsView.ScrollHandDrag)
+        self.setDragMode(QGraphicsView.ScrollHandDrag)
         self.__zoom = 3
 
     def refresh(self):
@@ -101,9 +103,9 @@ class Scene(object):
                               pixmap.height() - self.__row_progress,
                               Machine.WIDTH, self.LIMIT_BAR_WIDTH))
 
-        self.__qv.resetTransform()
-        self.__qv.scale(self.zoom, self.zoom)
-        self.__qv.setScene(qscene)
+        self.resetTransform()
+        self.scale(self.zoom, self.zoom)
+        self.setScene(qscene)
 
     @property
     def row_progress(self):

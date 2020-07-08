@@ -30,11 +30,11 @@ class FirmwareFlash(QFrame):
         "mega2560": "wiring",
     }
 
-    def __init__(self, app_context):
+    def __init__(self, parent):
         # TODO: add creator that does not depend from super to ease testing.
-        super(FirmwareFlash, self).__init__(None)
+        super().__init__()
         self.__logger = logging.getLogger(type(self).__name__)
-        self.__app_context = app_context
+        self.__app_context = parent.app_context
 
         self.ui = Ui_FirmwareFlashFrame()
         self.ui.setupUi(self)
