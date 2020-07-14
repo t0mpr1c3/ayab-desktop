@@ -11,7 +11,7 @@ python3 -m pip install -r requirements.txt
 cd src/main/resources/base/ayab/translation
 ./ayab_trans.pl
 lrelease *.ts
-cd ../../../../../..
+cd -
 
 echo "# build the app"
 python3 -m fbs freeze

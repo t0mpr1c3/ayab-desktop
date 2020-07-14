@@ -35,10 +35,9 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
         pip install -r windows-build\windows_build_requirements.txt
-    - name: Create translation files
+    - name: Convert PyQt5 `.ui` files and create translation files
       run: |
-        cd src/main/resources/base/ayab/translations
-        ./ayab_trans.pl
+        ./environment.sh
     - name: Build app
       run: |
         python -m fbs freeze --debug
