@@ -28,9 +28,9 @@ import os
 import sys
 import platform
 import re
-from subprocess import Popen, PIPE, STDOUT, run
+from subprocess import run, STDOUT, check_output
 
-from .firmware_flash_gui import Ui_FirmwareFlashFrame
+from .firmware_flash_gui import Ui_Firmware
 from . import utils
 
 
@@ -52,7 +52,7 @@ class FirmwareFlash(QFrame):
         self.__logger = logging.getLogger(type(self).__name__)
         self.__app_context = parent.app_context
 
-        self.ui = Ui_FirmwareFlashFrame()
+        self.ui = Ui_Firmware()
         self.ui.setupUi(self)
         self.ui.flash_firmware.setEnabled(False)
 
@@ -147,32 +147,17 @@ class FirmwareFlash(QFrame):
         # else
         tr_ = QCoreApplication.translate
         try:
-            p = Popen(command, stdout=PIPE, stderr=STDOUT, shell=True)
-
-            rc = p.poll()
-            while rc != 0:
-                while True:
-                    line = p.stdout.readline()
-                    # self.__logger.debug(line)
-                    if not line:
-                        break
-                rc = p.poll()
-
-            if rc == 0:
-                self.__logger.info("Flashing done!")
-                utils.display_blocking_popup(
-                    tr_("FirmwareFlash", "Flashing done!"))
-                return True
-            else:
-                self.__logger.info("Error flashing firmware.")
-                utils.display_blocking_popup(
-                    tr_("FirmwareFlash", "Error flashing firmware."), "error")
-                return False
+            p = check_output(command, stderr=STDOUT, timeout=10)
         except Exception as e:
             self.__logger.info("Error flashing firmware: " + str(e))
             utils.display_blocking_popup(
-                tr_("FirmwareFlash", "Error flashing firmware."), "error")
-        return False
+                tr_("Firmware", "Error flashing firmware."), "error")
+            return False
+        else:
+            self.__logger.info("Flashing done!")
+            utils.display_blocking_popup(
+                tr_("Firmware", "Flashing done!"))
+            return True
 
     def generate_command(self, base_dir, os_name, controller_name,
                          firmware_name):

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>FirmwareFlashFrame</class>
+ <class>Firmware</class>
  <widget class="QFrame" name="FirmwareFlashFrame">
   <property name="geometry">
    <rect>
