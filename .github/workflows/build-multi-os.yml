@@ -298,6 +298,13 @@ jobs:
         mkdir -p usr/share/metainfo/
         rm -f usr/share/metainfo/*.appdata.xml 
         cp linux-build/appimage/ayab.appdata.xml usr/share/metainfo/
+    - name: Remove unneeded PyQt5 plugins and libraries
+      run: |
+        cd squashfs-root/opt/${{steps.vars.outputs.python}}/lib/${{steps.vars.outputs.python}}/site-packages/PyQt5/Qt
+        find plugins/platforms/ -type f -not -name libqxcb.so -delete
+        rm -rf plugins/{audio,egldeviceintegrations,gamepads,geometryloaders,geoservices,mediaservice,playlistformats,position,renderplugins,sceneparsers,sensorgestures,sensors,sqldrivers,texttospeech,wayland*,webview,xcbglintegrations}
+        rm -rf qml
+        # rm -rf lib/libQt5{Bluetooth,Concurrent,Designer,Help,Location,Multimedia,Nfc,OpenGL,Positioning,Qml,Quick,RemoteObjects,Sensors,Sql,Test,WaylandClient,WebChannel,WebSockets,Xml}*
     - name: Convert to AppImage
       run: |
         wget -c https://github.com/$(wget -q https://github.com/probonopd/go-appimage/releases -O - | grep "appimagetool-.*-x86_64.AppImage" | head -n 1 | cut -d '"' -f 2)
