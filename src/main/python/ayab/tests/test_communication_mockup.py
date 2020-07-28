@@ -37,48 +37,47 @@ class TestAyabCommunicationMockup(unittest.TestCase):
         self.comm_dummy.open_serial()
         assert self.comm_dummy.is_open()
 
-    def test_update(self):
-        assert self.comm_dummy.update() == (None, MessageToken.none, 0)
+    def test_update_API5(self):
+        assert self.comm_dummy.update_API5() == (None, MessageToken.none, 0)
 
-    def test_req_start(self):
-        start_val, end_val, continuous_reporting = 0, 10, True
+    def test_req_start_API5(self):
+        start_val, end_val, continuous_reporting, machine_val, crc8 = 0, 10, True, 0, 0x63
         expected_result = (b'\xc1\x01', MessageToken.cnfStart, 1)
-        self.comm_dummy.req_start(start_val, end_val, continuous_reporting)
-        bytes_read = self.comm_dummy.update()
+        self.comm_dummy.req_start_API5(start_val, end_val, continuous_reporting, machine_val)
+        bytes_read = self.comm_dummy.update_API5()
         assert bytes_read == expected_result
 
     def test_req_info(self):
         expected_result = (b'\xc3\x05\xff\xff', MessageToken.cnfInfo, 5)
         self.comm_dummy.req_info()
-        bytes_read = self.comm_dummy.update()
+        bytes_read = self.comm_dummy.update_API5()
         assert bytes_read == expected_result
 
         # indState shall be sent automatically, also
         expected_result = (b'\x84\x01\xff\xff\xff\xff\x01\x7f',
                            MessageToken.indState, 1)
-        bytes_read = self.comm_dummy.update()
+        bytes_read = self.comm_dummy.update_API5()
         assert bytes_read == expected_result
 
-    def test_req_test(self):
-        expected_result = (b'\xc4\x01', MessageToken.cnfTest, 1)
-        self.comm_dummy.req_test()
-        bytes_read = self.comm_dummy.update()
-        assert bytes_read == expected_result
+    # def test_req_test(self):
+    #     expected_result = (b'\xc4\x01', MessageToken.cnfTest, 1)
+    #     self.comm_dummy.req_test()
+    #     bytes_read = self.comm_dummy.update()
+    #     assert bytes_read == expected_result
 
-    def test_cnf_line(self):
+    def test_cnf_line_API5(self):
         lineNumber = 13
         lineData = [0x23, 0x24]
         flags = 0x12
         crc8 = 0x57
-        assert self.comm_dummy.cnf_line(lineNumber, lineData, flags)
+        assert self.comm_dummy.cnf_line_API5(lineNumber, lineData, flags)
 
-    def test_req_line(self):
+    def test_req_line_API5(self):
         self.comm_dummy.open_serial()
-        start_val, end_val, continuous_reporting = 0, 10, True
-        self.comm_dummy.req_start(start_val, end_val, continuous_reporting)
-        self.comm_dummy.update()  # cnfStart
+        start_val, end_val, continuous_reporting, machine_val = 0, 10, True, 0
+        self.comm_dummy.req_start_API5(start_val, end_val, continuous_reporting, machine_val)
+        self.comm_dummy.update_API5()  # cnfStart
 
         for i in range(0, 31):  # 256):  # too slow to test every single byte
-            bytes_read = self.comm_dummy.update()
-            assert bytes_read == (bytearray([0x82,
-                                             i]), MessageToken.reqLine, i)
+            bytes_read = self.comm_dummy.update_API5()
+            assert bytes_read == (bytearray([0x82, i]), MessageToken.reqLine, i)

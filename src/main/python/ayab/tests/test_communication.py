@@ -59,18 +59,18 @@ class TestCommunication(unittest.TestCase):
                                                 115200,
                                                 timeout=0.1)
 
-    def test_update(self):
+    def test_update_API5(self):
         byte_array = bytearray([0xc0, 0xc1, 0x01, 0xc0])
         self.dummy_serial.write(byte_array)
-        result = self.comm_dummy.update()
+        result = self.comm_dummy.update_API5()
         expected_result = (b'\xc1\x01', MessageToken.cnfStart, 1)
         assert result == expected_result
 
-    def test_req_start(self):
-        start_val, end_val, continuous_reporting = 0, 10, True
-        self.comm_dummy.req_start(start_val, end_val, continuous_reporting)
+    def test_req_start_API5(self):
+        start_val, end_val, continuous_reporting, machine_val, crc8 = 0, 10, True, 0, 0x63
+        self.comm_dummy.req_start_API5(start_val, end_val, continuous_reporting, machine_val)
         byte_array = bytearray(
-            [0xc0, 0x01, start_val, end_val, continuous_reporting, 0xc0])
+            [0xc0, 0x01, start_val, end_val, continuous_reporting, machine_val, crc8, 0xc0])
         bytes_read = self.dummy_serial.read(len(byte_array))
         self.assertEqual(bytes_read, byte_array)
 
@@ -80,18 +80,18 @@ class TestCommunication(unittest.TestCase):
         bytes_read = self.dummy_serial.read(len(byte_array))
         assert bytes_read == byte_array
 
-    def test_req_test(self):
-        self.comm_dummy.req_test()
-        byte_array = bytearray([0xc0, 0x04, 0xc0])
-        bytes_read = self.dummy_serial.read(len(byte_array))
-        assert bytes_read == byte_array
+    # def test_req_test(self):
+    #     self.comm_dummy.req_test()
+    #     byte_array = bytearray([0xc0, 0x04, 0xc0])
+    #     bytes_read = self.dummy_serial.read(len(byte_array))
+    #     assert bytes_read == byte_array
 
-    def test_cnf_line(self):
+    def test_cnf_line_API5(self):
         line_number = 0
         line_data = b'\0\xde\xad\xbe\xef\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0'
         flags = 1
         crc8 = 0xE9
-        self.comm_dummy.cnf_line(line_number, line_data, flags)
+        self.comm_dummy.cnf_line_API5(line_number, line_data, flags)
         byte_array = bytearray([0xc0, 0x42])
         byte_array.append(line_number)
         byte_array.extend(line_data)

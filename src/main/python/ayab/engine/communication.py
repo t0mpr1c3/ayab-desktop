@@ -35,10 +35,14 @@ import pprint
 class MessageToken(Enum):
     unknown = -2
     none = -1
-    cnfStart = 0xC1
+    reqInfo = 0x03
     cnfInfo = 0xC3
+    # reqTest = 0x04
+    # cnfTest = 0xC4
+    reqStart = 0x01
+    cnfStart = 0xC1
     reqLine = 0x82
-    cnfTest = 0xC4
+    cnfLine = 0x42
     indState = 0x84
 
 
@@ -90,53 +94,32 @@ class AyabCommunication(object):
                 self.__logger.warning("Closing Serial port failed. \
                                       Was it ever open?")
 
-    def update(self):
-        """Reads data from serial and tries to parse as SLIP packet."""
-        if self.__ser:
-            data = self.__ser.read(1000)
-            if len(data) > 0:
-                self.__rx_msg_list.extend(self.__driver.receive(data))
+    # NB this method must be the same for all API versions
+    def req_info(self):
+        """Sends a request for information to controller."""
+        data = self.__driver.send(bytes([MessageToken.reqInfo.value]))
+        self.__ser.write(data)
 
-            if len(self.__rx_msg_list) > 0:
-                return self.parse_update(self.__rx_msg_list.pop(0))
+    # def req_test_API5(self):
+    #     """"""
+    #     data = self.__driver.send(bytes([MessageToken.reqTest]))
+    #     self.__ser.write(data)
 
-        return None, MessageToken.none, 0
-
-    def parse_update(self, msg):
-        if msg is None:
-            return None, MessageToken.none, 0
-
-        for t in list(MessageToken):
-            if msg[0] == t.value:
-                return msg, t, msg[1]
-
-        # fallthrough
-        self.__logger.debug("unknown message: ")  # drop crlf
-        pp = pprint.PrettyPrinter(indent=4)
-        pp.pprint(msg)
-        return msg, MessageToken.unknown, 0
-
-    def req_start(self, start_needle, stop_needle, continuous_reporting):
+    def req_start_API5(self, start_needle, stop_needle, continuous_reporting, machine_val):
         """Sends a start message to the controller."""
         data = bytearray()
-        data.append(0x01)
+        data.append(MessageToken.reqStart.value)
         data.append(start_needle)
         data.append(stop_needle)
         data.append(continuous_reporting)
+        data.append(machine_val)
+        hash = 0
+        hash = add_crc(hash, data)
+        data.append(hash)
         data = self.__driver.send(bytes(data))
         self.__ser.write(data)
 
-    def req_info(self):
-        """Sends a request for information to controller."""
-        data = self.__driver.send(b'\x03')
-        self.__ser.write(data)
-
-    def req_test(self):
-        """"""
-        data = self.__driver.send(b'\x04')
-        self.__ser.write(data)
-
-    def cnf_line(self, line_number, line_data, flags):
+    def cnf_line_API5(self, line_number, line_data, flags):
         """Sends a line of data via the serial port.
 
         Sends a line of data to the serial port, all arguments are mandatory.
@@ -150,7 +133,7 @@ class AyabCommunication(object):
 
         """
         data = bytearray()
-        data.append(0x42)
+        data.append(MessageToken.cnfLine.value)
         data.append(line_number)
         data.extend(line_data)
         data.append(flags)
@@ -159,6 +142,32 @@ class AyabCommunication(object):
         data.append(hash)
         data = self.__driver.send(bytes(data))
         self.__ser.write(data)
+
+    def update_API5(self):
+        """Reads data from serial and tries to parse as SLIP packet."""
+        if self.__ser:
+            data = self.__ser.read(1000)
+            if len(data) > 0:
+                self.__rx_msg_list.extend(self.__driver.receive(data))
+
+            if len(self.__rx_msg_list) > 0:
+                return self.parse_update_API5(self.__rx_msg_list.pop(0))
+
+        return None, MessageToken.none, 0
+
+    def parse_update_API5(self, msg):
+        if msg is None:
+            return None, MessageToken.none, 0
+
+        for t in list(MessageToken):
+            if msg[0] == t.value:
+                return msg, t, msg[1]
+
+        # fallthrough
+        self.__logger.debug("unknown message: ")  # drop crlf
+        pp = pprint.PrettyPrinter(indent=4)
+        pp.pprint(msg)
+        return msg, MessageToken.unknown, 0
 
 
 # CRC algorithm after Maxim/Dallas
